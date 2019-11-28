@@ -1,2 +1,2 @@
-export { ServiceManager } from "./manager";
-export { inject, injectable } from "./inject";
+export { Injector } from "./injector";
+export { inject, injectable, injectFor, injectSelf } from "./inject";

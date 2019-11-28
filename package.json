@@ -1,17 +1,16 @@
 {
   "name": "mp-inject",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "description": "A simple dependency injection library for mini-programs.",
   "main": "index.js",
   "scripts": {
-    "test": "ts-node test/index.ts",
+    "test": "mocha --require ts-node/register test/**/*.{ts,tsx}",
     "lint": "tslint -c tslint.json 'src/**/*.ts'",
     "fix": "tslint -c tslint.json 'src/**/*.ts' --fix",
-    "dts": "gulp dts",
     "type-check": "tsc --noEmit",
     "type-check:watch": "npm run type-check -- --watch",
-    "build": "npm run type-check&&npm run fix&&webpack",
-    "pack": "npm run build&&npm run dts&&npm pack"
+    "build": "npm run type-check&&npm run fix&&webpack&& rm -rf dts",
+    "pack": "npm run build&&npm pack"
   },
   "keywords": [
     "miniprogram",
@@ -30,8 +29,11 @@
     "url": "https://github.com/fishen/mp-inject.git"
   },
   "devDependencies": {
-    "bundle-dts": "^1.0.4",
-    "gulp": "^4.0.2",
+    "@types/chai": "^4.2.5",
+    "@types/mocha": "^5.2.7",
+    "chai": "^4.2.0",
+    "dts-bundle-webpack": "^1.0.2",
+    "mocha": "^6.2.2",
     "ts-loader": "^6.0.4",
     "ts-node": "^8.3.0",
     "tslint": "^5.18.0",
@@ -39,5 +41,9 @@
     "webpack": "^4.35.3",
     "webpack-cli": "^3.3.6",
     "webpack-node-externals": "^1.7.2"
+  },
+  "dependencies": {
+    "reflect-metadata": "^0.1.13",
+    "tslib": "^1.10.0"
   }
 }

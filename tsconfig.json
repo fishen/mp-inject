@@ -1,29 +1,36 @@
 {
     "compilerOptions": {
-        "experimentalDecorators": true,
-        "emitDecoratorMetadata": true,
-        "sourceMap": true,
-        "noImplicitAny": false,
-        "module": "commonjs",
-        "target": "es5",
-        "allowJs": false,
-        "typeRoots": [
-            "typings"
-        ],
-        "lib": [
-            "dom",
-            "es6",
-            "es2018.promise"
-        ]
+      "experimentalDecorators": true,
+      "emitDecoratorMetadata": true,
+      "allowSyntheticDefaultImports": true,
+      "esModuleInterop": true,
+      "sourceMap": true,
+      "noImplicitAny": true,
+      "declaration": true,
+      "declarationDir": "dts",
+      "module": "commonjs",
+      "target": "es5",
+      "removeComments": true,
+      "allowJs": false,
+      "checkJs": false,
+      "downlevelIteration": true,
+      "importHelpers": true,
+      "typeRoots": [
+        "typings"
+      ],
+      "lib": [
+        "dom",
+        "es6"
+      ]
     },
     "include": [
-        "src/**/*.ts",
-        "test/**/*.ts"
+      "src/**/*.ts",
+      "test/**/*.ts"
     ],
     "exclude": [
-        "typings",
-        "node_modules",
-        "**/*.spec.ts",
-        "**/*.d.ts"
+      "typings",
+      "node_modules",
+      "**/*.spec.ts",
+      "**/*.d.ts"
     ]
-}
+  }

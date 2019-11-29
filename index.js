@@ -168,23 +168,29 @@ var Injector = /** @class */ (function () {
     };
     /**
      * Binding injected property members
-     * @param thisArg instance object
+     * @param instance instance object
+     * @param prototype prototype object
      * @param forcibly Whether to force the setting
      */
-    Injector.bindProperties = function (thisArg, forcibly) {
+    Injector.bindProperties = function (instance, prototype, forcibly) {
         if (forcibly === void 0) { forcibly = false; }
-        if (thisArg[constants_1.PROPERTIES_BOUND] && !forcibly) {
+        if (instance[constants_1.PROPERTIES_BOUND] && !forcibly) {
             return;
         }
-        var properties = reflect_1.default.getMetadata(constants_1.INJECTED_PROPERTIES, thisArg);
+        var properties = reflect_1.default.getMetadata(constants_1.INJECTED_PROPERTIES, prototype);
         if (!properties) {
             return;
         }
         properties.forEach(function (_a) {
             var name = _a.name, type = _a.type, args = _a.args;
-            return thisArg[name] = Injector.get.apply(Injector, tslib_1.__spread([type], args));
+            try {
+                instance[name] = Injector.get.apply(Injector, tslib_1.__spread([type], args));
+            }
+            catch (err) {
+                console.error(name, prototype.constructor.name, err);
+            }
         });
-        thisArg[constants_1.PROPERTIES_BOUND] = true;
+        instance[constants_1.PROPERTIES_BOUND] = true;
     };
     return Injector;
 }());
@@ -310,7 +316,7 @@ function bindProperties(ctor, method) {
             for (var _i = 0; _i < arguments.length; _i++) {
                 methodArgs[_i] = arguments[_i];
             }
-            injector_1.Injector.bindProperties(ctor.prototype);
+            injector_1.Injector.bindProperties(this, ctor.prototype);
             return original && original.apply(this, methodArgs);
         };
     }
@@ -383,14 +389,14 @@ function injectable(options) {
                         newArgs[_i] = arguments[_i];
                     }
                     var _this = this;
-                    // tslint:disable-next-line
-                    bindPropertiesInConstructor && injector_1.Injector.bindProperties(ctor.prototype);
                     var injectedArgs = reflect_1.default.getMetadata(constants_1.INJECTED_ARGUMENTS, ctor) || [];
                     injectedArgs.forEach(function (_a) {
                         var index = _a.index, args = _a.args, type = _a.type;
                         return newArgs[index] = injector_1.Injector.get.apply(injector_1.Injector, tslib_1.__spread([type], args));
                     });
                     _this = _super.apply(this, tslib_1.__spread(newArgs)) || this;
+                    // tslint:disable-next-line
+                    bindPropertiesInConstructor && injector_1.Injector.bindProperties(_this, ctor.prototype);
                     return _this;
                 }
                 return class_1;
@@ -419,7 +425,7 @@ exports.injectFor = injectFor;
  * Register the current class as a service of the self type
  */
 function injectSelf() {
-    return injectFor();
+    return injectFor(null);
 }
 exports.injectSelf = injectSelf;
 

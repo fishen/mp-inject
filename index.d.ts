@@ -40,10 +40,11 @@ declare module 'mp-inject/injector' {
             static config(options: IConfigOptions): void;
             /**
                 * Binding injected property members
-                * @param thisArg instance object
+                * @param instance instance object
+                * @param prototype prototype object
                 * @param forcibly Whether to force the setting
                 */
-            static bindProperties(thisArg: any, forcibly?: boolean): void;
+            static bindProperties(instance: any, prototype: object, forcibly?: boolean): void;
     }
 }
 
@@ -73,7 +74,7 @@ declare module 'mp-inject/inject' {
         * Register the current class as a service of the specified type
         * @param type The type to register
         */
-    export function injectFor(type?: RegisterType): (ctor: new (...args: any) => any) => void;
+    export function injectFor(type: RegisterType): (ctor: new (...args: any) => any) => void;
     /**
         * Register the current class as a service of the self type
         */

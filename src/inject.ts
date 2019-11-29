@@ -29,7 +29,7 @@ function bindProperties(ctor: new (...args: any) => void, method: string) {
     const original = ctor.prototype[method];
     if (typeof original === "function" || original === undefined) {
         ctor.prototype[method] = function(...methodArgs: any) {
-            Injector.bindProperties(ctor.prototype);
+            Injector.bindProperties(this, ctor.prototype);
             return original && original.apply(this, methodArgs);
         };
     }
@@ -93,11 +93,11 @@ export function injectable(options?: IConfigOptions) {
         if (hasProperties && bindPropertiesInConstructor || hasArguments) {
             return class extends ctor {
                 constructor(...newArgs: any) {
-                    // tslint:disable-next-line
-                    bindPropertiesInConstructor && Injector.bindProperties(ctor.prototype);
                     const injectedArgs: any[] = reflect.getMetadata(INJECTED_ARGUMENTS, ctor) || [];
                     injectedArgs.forEach(({ index, args, type }) => newArgs[index] = Injector.get(type, ...args));
                     super(...newArgs);
+                    // tslint:disable-next-line
+                    bindPropertiesInConstructor && Injector.bindProperties(this, ctor.prototype);
                 }
             };
         }
@@ -108,7 +108,7 @@ export function injectable(options?: IConfigOptions) {
  * Register the current class as a service of the specified type
  * @param type The type to register
  */
-export function injectFor(type?: RegisterType) {
+export function injectFor(type: RegisterType) {
     return function(ctor: new (...args: any) => any) {
         Injector.register(type || ctor, function(...ctorArguments: any[]) {
             return new ctor(...ctorArguments);
@@ -120,5 +120,5 @@ export function injectFor(type?: RegisterType) {
  * Register the current class as a service of the self type
  */
 export function injectSelf() {
-    return injectFor();
+    return injectFor(null);
 }

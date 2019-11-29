@@ -58,14 +58,21 @@ export class Injector {
 
     /**
      * Binding injected property members
-     * @param thisArg instance object
+     * @param instance instance object
+     * @param prototype prototype object
      * @param forcibly Whether to force the setting
      */
-    public static bindProperties(thisArg: any, forcibly: boolean = false) {
-        if (thisArg[PROPERTIES_BOUND] && !forcibly) { return; }
-        const properties: any[] = reflect.getMetadata(INJECTED_PROPERTIES, thisArg);
+    public static bindProperties(instance: any, prototype: object, forcibly: boolean = false) {
+        if (instance[PROPERTIES_BOUND] && !forcibly) { return; }
+        const properties: any[] = reflect.getMetadata(INJECTED_PROPERTIES, prototype);
         if (!properties) { return; }
-        properties.forEach(({ name, type, args }) => thisArg[name] = Injector.get(type, ...args));
-        thisArg[PROPERTIES_BOUND] = true;
+        properties.forEach(({ name, type, args }) => {
+            try {
+                instance[name] = Injector.get(type, ...args);
+            } catch (err) {
+                console.error(name, prototype.constructor.name, err);
+            }
+        });
+        instance[PROPERTIES_BOUND] = true;
     }
 }

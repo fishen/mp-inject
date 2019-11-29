@@ -297,10 +297,10 @@ function inject(options) {
         }
         else if (typeof index === "number") {
             if (typeof type !== "function") {
-                var types = reflect_1.default.getMetadata(constants_1.DESIGN_PARAM_TYPES, target);
+                var types = reflect_1.default.getMetadata(constants_1.DESIGN_PARAM_TYPES, target, name);
                 type = types[index];
                 if (typeof type !== "function") {
-                    throw new Error("Unknown argument type of [" + ctor.name + "," + index + "].");
+                    throw new Error("Unknown argument type of [" + ctor.name + "|" + index + "].");
                 }
             }
             defineData(constants_1.INJECTED_ARGUMENTS, { type: type, args: args, name: name, index: index }, target);
@@ -310,19 +310,16 @@ function inject(options) {
 exports.inject = inject;
 function injectable(options) {
     var opts = Object.assign({}, config_1.defaultConfigOptions, options);
-    var propertiesBinder = opts.propertiesBinder;
     var bindPropertiesInConstructor = opts.bindPropertiesInConstructor;
+    var propertiesBinder = opts.propertiesBinder;
     return function (ctor) {
         reflect_1.default.defineMetadata(constants_1.INJECTED_CLASS_TAG, true, ctor.prototype);
         var hasProperties = reflect_1.default.hasMetadata(constants_1.INJECTED_PROPERTIES, ctor.prototype);
         if (!bindPropertiesInConstructor && hasProperties) {
-            if (typeof propertiesBinder === "function") {
-                propertiesBinder = propertiesBinder(ctor);
+            if (propertiesBinder === "constructor") {
+                bindPropertiesInConstructor = true;
             }
-            if (typeof propertiesBinder === "string") {
-                if (propertiesBinder === "constructor") {
-                    throw new Error("The propertiesBinder options cannot be 'constructor'.");
-                }
+            else if (typeof propertiesBinder === "string") {
                 bindProperties(ctor, propertiesBinder);
             }
             else {

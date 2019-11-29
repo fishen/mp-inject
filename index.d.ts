@@ -32,7 +32,7 @@ declare module 'mp-inject/inject' {
 
 declare module 'mp-inject/config' {
     export interface IConfigOptions {
-        propertiesBinder?: string | ((ctor: new (...args: any) => any) => string);
+        propertiesBinder?: string;
         bindPropertiesInConstructor?: boolean;
     }
     export const defaultConfigOptions: {

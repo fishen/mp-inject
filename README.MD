@@ -70,7 +70,7 @@ describe("demo", () => {
 });
 ```
 ## Injection options
-* propertiesBinder(string,optional): The method name to bind properties, default use onLoad or attached methods. default use `onLoad` and `attached`.If you want to bind properties in the constructor, please set the `bindPropertiesInConstructor` option.
+* propertiesBinder(string,optional): The method name to bind properties, default use onLoad or attached methods. default use `onLoad` and `attached`.
 * bindPropertiesInConstructor(boolean,optional): Whether to bind properties in the constructor. default is `true`.
 # API
 ## Injector.register(type:Function,value:Function|object):void

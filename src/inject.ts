@@ -30,7 +30,6 @@ function bindProperties(ctor: new (...args: any) => void, method: string) {
     if (typeof original === "function" || original === undefined) {
         ctor.prototype[method] = function(...methodArgs: any) {
             Injector.bindProperties(ctor.prototype);
-
             return original && original.apply(this, methodArgs);
         };
     }
@@ -54,10 +53,10 @@ export function inject(options?: IInjectOptions | RegisterType) {
             defineData(INJECTED_PROPERTIES, { type, args, name }, target);
         } else if (typeof index === "number") {
             if (typeof type !== "function") {
-                const types = reflect.getMetadata(DESIGN_PARAM_TYPES, target);
+                const types = reflect.getMetadata(DESIGN_PARAM_TYPES, target, name);
                 type = types[index];
                 if (typeof type !== "function") {
-                    throw new Error(`Unknown argument type of [${ctor.name},${index}].`);
+                    throw new Error(`Unknown argument type of [${ctor.name}|${index}].`);
                 }
             }
             defineData(INJECTED_ARGUMENTS, { type, args, name, index }, target);
@@ -70,19 +69,15 @@ export function inject(options?: IInjectOptions | RegisterType) {
  */
 export function injectable(options?: IConfigOptions) {
     const opts = Object.assign({}, defaultConfigOptions, options);
-    let { propertiesBinder } = opts;
-    const bindPropertiesInConstructor = opts.bindPropertiesInConstructor;
+    let { bindPropertiesInConstructor } = opts;
+    const propertiesBinder = opts.propertiesBinder;
     return function(ctor: new (...args: any) => any): any {
         reflect.defineMetadata(INJECTED_CLASS_TAG, true, ctor.prototype);
         const hasProperties = reflect.hasMetadata(INJECTED_PROPERTIES, ctor.prototype);
         if (!bindPropertiesInConstructor && hasProperties) {
-            if (typeof propertiesBinder === "function") {
-                propertiesBinder = propertiesBinder(ctor);
-            }
-            if (typeof propertiesBinder === "string") {
-                if (propertiesBinder === "constructor") {
-                    throw new Error(`The propertiesBinder options cannot be 'constructor'.`);
-                }
+            if (propertiesBinder === "constructor") {
+                bindPropertiesInConstructor = true;
+            } else if (typeof propertiesBinder === "string") {
                 bindProperties(ctor, propertiesBinder);
             } else {
                 bindProperties(ctor, "onLoad");

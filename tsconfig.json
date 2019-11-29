@@ -10,7 +10,6 @@
       "declarationDir": "dts",
       "module": "commonjs",
       "target": "es5",
-      "removeComments": true,
       "allowJs": false,
       "checkJs": false,
       "downlevelIteration": true,

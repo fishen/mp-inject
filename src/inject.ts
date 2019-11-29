@@ -2,7 +2,7 @@
 import { defaultConfigOptions, IConfigOptions } from "./config";
 import {
     DESIGN_PARAM_TYPES, DESIGN_TYPE, INJECTED_ARGUMENTS,
-    INJECTED_CLASS_TAG, INJECTED_PROPERTIES,
+    INJECTED_CLASS_TAG, INJECTED_PROPERTIES, PROPERTIES_BINDER,
 } from "./constants";
 import { Injector, RegisterType } from "./injector";
 import reflect from "./reflect";
@@ -74,14 +74,19 @@ export function injectable(options?: IConfigOptions) {
     return function(ctor: new (...args: any) => any): any {
         reflect.defineMetadata(INJECTED_CLASS_TAG, true, ctor.prototype);
         const hasProperties = reflect.hasMetadata(INJECTED_PROPERTIES, ctor.prototype);
-        if (!bindPropertiesInConstructor && hasProperties) {
+        if (hasProperties) {
             if (propertiesBinder === "constructor") {
                 bindPropertiesInConstructor = true;
             } else if (typeof propertiesBinder === "string") {
                 bindProperties(ctor, propertiesBinder);
-            } else {
+                bindPropertiesInConstructor = false;
+            } else if (typeof ctor.prototype[PROPERTIES_BINDER] === "string") {
+                bindProperties(ctor, ctor.prototype[PROPERTIES_BINDER]);
+                bindPropertiesInConstructor = false;
+            } else if (!bindPropertiesInConstructor) {
                 bindProperties(ctor, "onLoad");
                 bindProperties(ctor, "attached");
+                bindPropertiesInConstructor = false;
             }
         }
         const hasArguments = reflect.hasMetadata(INJECTED_ARGUMENTS, ctor);

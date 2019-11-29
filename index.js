@@ -91,14 +91,42 @@
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-var tslib_1 = __webpack_require__(1);
-var config_1 = __webpack_require__(2);
-var constants_1 = __webpack_require__(3);
+exports.DESIGN_PARAM_TYPES = "design:paramtypes";
+exports.DESIGN_TYPE = "design:type";
+exports.DESIGN_RETURN_TYPE = "design:returntype";
+exports.INJECTED_PROPERTIES = Symbol("injected properties");
+exports.INJECTED_ARGUMENTS = Symbol("injected arguments");
+exports.PROPERTIES_BOUND = Symbol("properties bound");
+exports.INJECTED_CLASS_TAG = Symbol("injected class tag");
+exports.PROPERTIES_BINDER = Symbol("properties binder");
+
+
+/***/ }),
+/* 1 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+var tslib_1 = __webpack_require__(2);
+var config_1 = __webpack_require__(3);
+var constants_1 = __webpack_require__(0);
 var reflect_1 = tslib_1.__importDefault(__webpack_require__(4));
 var INJECT_ITEMS = new Map();
-var Injector = (function () {
+var Injector = /** @class */ (function () {
     function Injector() {
     }
+    /**
+     * Register a service for injection.
+     * @param type The service type to be register
+     * @param value The associated value can be a factory function.
+     *
+     * @example
+     * Injector.register(String, "default value");
+     * Injector.register(Number, () => Math.random());
+     * class Demo{}
+     * Injector.register(Demo, new Demo());
+     */
     Injector.register = function (type, value) {
         if (typeof type !== "function") {
             throw new TypeError("The 'type' parameter must be a function type.");
@@ -106,6 +134,16 @@ var Injector = (function () {
         var factory = typeof value === "function" ? value : function () { return value; };
         INJECT_ITEMS.set(type, factory);
     };
+    /**
+     * Get the value corresponding to a specific type, the type must be registered in advance.
+     * @param type The type registered.
+     * @param args The parameters required by the factory function.
+     *
+     * @example
+     * class Demo{}
+     * Injector.register(Demo, new Demo());
+     * const instance = ServiceManager.get(Demo);
+     */
     Injector.get = function (type) {
         var args = [];
         for (var _i = 1; _i < arguments.length; _i++) {
@@ -121,9 +159,18 @@ var Injector = (function () {
         }
         return factory.apply(null, args);
     };
+    /**
+     * Set global injection options
+     * @param options injection options
+     */
     Injector.config = function (options) {
         Object.assign(config_1.defaultConfigOptions, options);
     };
+    /**
+     * Binding injected property members
+     * @param thisArg instance object
+     * @param forcibly Whether to force the setting
+     */
     Injector.bindProperties = function (thisArg, forcibly) {
         if (forcibly === void 0) { forcibly = false; }
         if (thisArg[constants_1.PROPERTIES_BOUND] && !forcibly) {
@@ -145,20 +192,10 @@ exports.Injector = Injector;
 
 
 /***/ }),
-/* 1 */
+/* 2 */
 /***/ (function(module, exports) {
 
 module.exports = require("tslib");
-
-/***/ }),
-/* 2 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.defaultConfigOptions = { bindPropertiesInConstructor: true };
-
 
 /***/ }),
 /* 3 */
@@ -167,13 +204,7 @@ exports.defaultConfigOptions = { bindPropertiesInConstructor: true };
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.DESIGN_PARAM_TYPES = "design:paramtypes";
-exports.DESIGN_TYPE = "design:type";
-exports.DESIGN_RETURN_TYPE = "design:returntype";
-exports.INJECTED_PROPERTIES = Symbol("injected properties");
-exports.INJECTED_ARGUMENTS = Symbol("injected arguments");
-exports.PROPERTIES_BOUND = Symbol("properties bound");
-exports.INJECTED_CLASS_TAG = Symbol("injected class tag");
+exports.defaultConfigOptions = { bindPropertiesInConstructor: true };
 
 
 /***/ }),
@@ -210,13 +241,15 @@ exports.default = reflect;
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-var injector_1 = __webpack_require__(0);
+var injector_1 = __webpack_require__(1);
 exports.Injector = injector_1.Injector;
 var inject_1 = __webpack_require__(8);
 exports.inject = inject_1.inject;
 exports.injectable = inject_1.injectable;
 exports.injectFor = inject_1.injectFor;
 exports.injectSelf = inject_1.injectSelf;
+var constants_1 = __webpack_require__(0);
+exports.PROPERTIES_BINDER = constants_1.PROPERTIES_BINDER;
 
 
 /***/ }),
@@ -258,10 +291,10 @@ module.exports = require("reflect-metadata");
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-var tslib_1 = __webpack_require__(1);
-var config_1 = __webpack_require__(2);
-var constants_1 = __webpack_require__(3);
-var injector_1 = __webpack_require__(0);
+var tslib_1 = __webpack_require__(2);
+var config_1 = __webpack_require__(3);
+var constants_1 = __webpack_require__(0);
+var injector_1 = __webpack_require__(1);
 var reflect_1 = tslib_1.__importDefault(__webpack_require__(4));
 function defineData(metadataKey, metadataValue, target) {
     var arr = reflect_1.default.getMetadata(metadataKey, target);
@@ -282,6 +315,10 @@ function bindProperties(ctor, method) {
         };
     }
 }
+/**
+ * Tag constructor arguments or properties to inject.
+ * @param args 函数调用用到的参数
+ */
 function inject(options) {
     var opts = typeof options === "function" ? { type: options } : Object.assign({}, options);
     return function (target, name, index) {
@@ -308,6 +345,9 @@ function inject(options) {
     };
 }
 exports.inject = inject;
+/**
+ * Automatically inject properties or constructor arguments for the current class
+ */
 function injectable(options) {
     var opts = Object.assign({}, config_1.defaultConfigOptions, options);
     var bindPropertiesInConstructor = opts.bindPropertiesInConstructor;
@@ -315,21 +355,27 @@ function injectable(options) {
     return function (ctor) {
         reflect_1.default.defineMetadata(constants_1.INJECTED_CLASS_TAG, true, ctor.prototype);
         var hasProperties = reflect_1.default.hasMetadata(constants_1.INJECTED_PROPERTIES, ctor.prototype);
-        if (!bindPropertiesInConstructor && hasProperties) {
+        if (hasProperties) {
             if (propertiesBinder === "constructor") {
                 bindPropertiesInConstructor = true;
             }
             else if (typeof propertiesBinder === "string") {
                 bindProperties(ctor, propertiesBinder);
+                bindPropertiesInConstructor = false;
             }
-            else {
+            else if (typeof ctor.prototype[constants_1.PROPERTIES_BINDER] === "string") {
+                bindProperties(ctor, ctor.prototype[constants_1.PROPERTIES_BINDER]);
+                bindPropertiesInConstructor = false;
+            }
+            else if (!bindPropertiesInConstructor) {
                 bindProperties(ctor, "onLoad");
                 bindProperties(ctor, "attached");
+                bindPropertiesInConstructor = false;
             }
         }
         var hasArguments = reflect_1.default.hasMetadata(constants_1.INJECTED_ARGUMENTS, ctor);
         if (hasProperties && bindPropertiesInConstructor || hasArguments) {
-            return (function (_super) {
+            return /** @class */ (function (_super) {
                 tslib_1.__extends(class_1, _super);
                 function class_1() {
                     var newArgs = [];
@@ -337,6 +383,7 @@ function injectable(options) {
                         newArgs[_i] = arguments[_i];
                     }
                     var _this = this;
+                    // tslint:disable-next-line
                     bindPropertiesInConstructor && injector_1.Injector.bindProperties(ctor.prototype);
                     var injectedArgs = reflect_1.default.getMetadata(constants_1.INJECTED_ARGUMENTS, ctor) || [];
                     injectedArgs.forEach(function (_a) {
@@ -352,6 +399,10 @@ function injectable(options) {
     };
 }
 exports.injectable = injectable;
+/**
+ * Register the current class as a service of the specified type
+ * @param type The type to register
+ */
 function injectFor(type) {
     return function (ctor) {
         injector_1.Injector.register(type || ctor, function () {
@@ -364,6 +415,9 @@ function injectFor(type) {
     };
 }
 exports.injectFor = injectFor;
+/**
+ * Register the current class as a service of the self type
+ */
 function injectSelf() {
     return injectFor();
 }

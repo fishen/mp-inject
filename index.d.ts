@@ -8,12 +8,24 @@ declare module 'mp-inject' {
 
 declare module 'mp-inject/injector' {
     import { IConfigOptions } from "mp-inject/config";
-    export type RegisterType = Function;
+    const SINGLE_VALUE_KEY: unique symbol;
+    export type RegisterType = Function & {
+            [SINGLE_VALUE_KEY]?: any;
+    };
+    export interface IRegisterOptions {
+            /**
+                * Whether it is a singleton pattern
+                * @default false
+                * @since 2.1.0
+                */
+            singleton?: boolean;
+    }
     export class Injector {
             /**
                 * Register a service for injection.
-                * @param type The service type to be register
+                * @param type The service type to be register.
                 * @param value The associated value can be a factory function.
+                * @param options The registration options.
                 *
                 * @example
                 * Injector.register(String, "default value");
@@ -21,7 +33,7 @@ declare module 'mp-inject/injector' {
                 * class Demo{}
                 * Injector.register(Demo, new Demo());
                 */
-            static register(type: RegisterType, value: any): void;
+            static register(type: RegisterType, value: any, options?: IRegisterOptions): void;
             /**
                 * Get the value corresponding to a specific type, the type must be registered in advance.
                 * @param type The type registered.
@@ -46,11 +58,12 @@ declare module 'mp-inject/injector' {
                 */
             static bindProperties(instance: any, prototype: object, forcibly?: boolean): void;
     }
+    export {};
 }
 
 declare module 'mp-inject/inject' {
     import { IConfigOptions } from "mp-inject/config";
-    import { RegisterType } from "mp-inject/injector";
+    import { IRegisterOptions, RegisterType } from "mp-inject/injector";
     interface IInjectOptions {
             /**
                 * The parameters required by the factory function.
@@ -62,8 +75,7 @@ declare module 'mp-inject/inject' {
             type?: RegisterType;
     }
     /**
-        * Tag constructor arguments or properties to inject.
-        * @param args 函数调用用到的参数
+        * Tag arguments or properties to inject.
         */
     export function inject(options?: IInjectOptions | RegisterType): (target: any, name: string, index?: number) => void;
     /**
@@ -73,12 +85,14 @@ declare module 'mp-inject/inject' {
     /**
         * Register the current class as a service of the specified type
         * @param type The type to register
+        * @param options The injection options
         */
-    export function injectFor(type: RegisterType): (ctor: new (...args: any) => any) => void;
+    export function injectFor(type: RegisterType, options?: IRegisterOptions): (ctor: new (...args: any) => any) => void;
     /**
         * Register the current class as a service of the self type
+        * @param options The injection options
         */
-    export function injectSelf(): (ctor: new (...args: any) => any) => void;
+    export function injectSelf(options?: IRegisterOptions): (ctor: new (...args: any) => any) => void;
     export {};
 }
 

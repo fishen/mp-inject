@@ -4,7 +4,7 @@ import {
     DESIGN_PARAM_TYPES, DESIGN_TYPE, INJECTED_ARGUMENTS,
     INJECTED_CLASS_TAG, INJECTED_PROPERTIES, PROPERTIES_BINDER,
 } from "./constants";
-import { Injector, RegisterType } from "./injector";
+import { Injector, IRegisterOptions, RegisterType } from "./injector";
 import reflect from "./reflect";
 
 interface IInjectOptions {
@@ -36,8 +36,7 @@ function bindProperties(ctor: new (...args: any) => void, method: string) {
 }
 
 /**
- * Tag constructor arguments or properties to inject.
- * @param args 函数调用用到的参数
+ * Tag arguments or properties to inject.
  */
 export function inject(options?: IInjectOptions | RegisterType) {
     const opts = typeof options === "function" ? { type: options } : Object.assign({}, options);
@@ -107,18 +106,20 @@ export function injectable(options?: IConfigOptions) {
 /**
  * Register the current class as a service of the specified type
  * @param type The type to register
+ * @param options The injection options
  */
-export function injectFor(type: RegisterType) {
+export function injectFor(type: RegisterType, options?: IRegisterOptions) {
     return function(ctor: new (...args: any) => any) {
         Injector.register(type || ctor, function(...ctorArguments: any[]) {
             return new ctor(...ctorArguments);
-        });
+        }, options);
     };
 }
 
 /**
  * Register the current class as a service of the self type
+ * @param options The injection options
  */
-export function injectSelf() {
-    return injectFor(null);
+export function injectSelf(options?: IRegisterOptions) {
+    return injectFor(null, options);
 }

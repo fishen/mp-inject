@@ -112,14 +112,16 @@ var tslib_1 = __webpack_require__(2);
 var config_1 = __webpack_require__(3);
 var constants_1 = __webpack_require__(0);
 var reflect_1 = tslib_1.__importDefault(__webpack_require__(4));
+var SINGLE_VALUE_KEY = Symbol("single value's key");
 var INJECT_ITEMS = new Map();
 var Injector = /** @class */ (function () {
     function Injector() {
     }
     /**
      * Register a service for injection.
-     * @param type The service type to be register
+     * @param type The service type to be register.
      * @param value The associated value can be a factory function.
+     * @param options The registration options.
      *
      * @example
      * Injector.register(String, "default value");
@@ -127,12 +129,13 @@ var Injector = /** @class */ (function () {
      * class Demo{}
      * Injector.register(Demo, new Demo());
      */
-    Injector.register = function (type, value) {
+    Injector.register = function (type, value, options) {
         if (typeof type !== "function") {
             throw new TypeError("The 'type' parameter must be a function type.");
         }
         var factory = typeof value === "function" ? value : function () { return value; };
-        INJECT_ITEMS.set(type, factory);
+        INJECT_ITEMS.set(type, [factory, options]);
+        delete type[SINGLE_VALUE_KEY];
     };
     /**
      * Get the value corresponding to a specific type, the type must be registered in advance.
@@ -152,12 +155,22 @@ var Injector = /** @class */ (function () {
         if (!INJECT_ITEMS.has(type)) {
             throw new Error("Missing type " + type.name + " injection");
         }
-        var factory = INJECT_ITEMS.get(type);
+        var _a = tslib_1.__read(INJECT_ITEMS.get(type), 2), factory = _a[0], options = _a[1];
         var prototype = factory.prototype;
-        if (prototype && reflect_1.default.hasMetadata(constants_1.INJECTED_CLASS_TAG, prototype)) {
-            return new (factory.bind.apply(factory, tslib_1.__spread([void 0], args)))();
+        var singleton = type instanceof Object && options && options.singleton;
+        if (singleton && SINGLE_VALUE_KEY in type) {
+            return type[SINGLE_VALUE_KEY];
         }
-        return factory.apply(null, args);
+        var result;
+        if (prototype && reflect_1.default.hasMetadata(constants_1.INJECTED_CLASS_TAG, prototype)) {
+            result = new (factory.bind.apply(factory, tslib_1.__spread([void 0], args)))();
+        }
+        else {
+            result = factory.apply(null, args);
+        }
+        // tslint:disable-next-line
+        singleton && (type[SINGLE_VALUE_KEY] = result);
+        return result;
     };
     /**
      * Set global injection options
@@ -322,8 +335,7 @@ function bindProperties(ctor, method) {
     }
 }
 /**
- * Tag constructor arguments or properties to inject.
- * @param args 函数调用用到的参数
+ * Tag arguments or properties to inject.
  */
 function inject(options) {
     var opts = typeof options === "function" ? { type: options } : Object.assign({}, options);
@@ -408,8 +420,9 @@ exports.injectable = injectable;
 /**
  * Register the current class as a service of the specified type
  * @param type The type to register
+ * @param options The injection options
  */
-function injectFor(type) {
+function injectFor(type, options) {
     return function (ctor) {
         injector_1.Injector.register(type || ctor, function () {
             var ctorArguments = [];
@@ -417,15 +430,16 @@ function injectFor(type) {
                 ctorArguments[_i] = arguments[_i];
             }
             return new (ctor.bind.apply(ctor, tslib_1.__spread([void 0], ctorArguments)))();
-        });
+        }, options);
     };
 }
 exports.injectFor = injectFor;
 /**
  * Register the current class as a service of the self type
+ * @param options The injection options
  */
-function injectSelf() {
-    return injectFor(null);
+function injectSelf(options) {
+    return injectFor(null, options);
 }
 exports.injectSelf = injectSelf;
 

@@ -73,10 +73,12 @@ describe("demo", () => {
 * propertiesBinder(string,optional): The method name to bind properties, default use onLoad or attached methods. default use `onLoad` and `attached`.
 * bindPropertiesInConstructor(boolean,optional): Whether to bind properties in the constructor. default is `true`.
 # API
-## Injector.register(type:Function,value:Function|object):void
+## Injector.register(type:Function, value:Function|object, options?:object):void
 Register a service for injection.
-* type: The service type to be register
+* type: The service type to be register.
 * value: The associated value can be a factory function.
+* options: The registration options.
+* * singleton(boolean, optional): Whether it is a singleton pattern, default is false.
 ```ts
 Injector.register(String, "default value");
 Injector.register(Number, () => Math.random());
@@ -97,6 +99,28 @@ Set global injection options
 * options: Injection options
 ```ts
 Injector.config({ bindPropertiesInConstructor: false });
+```
+# Singleton
+```ts
+// @injectSelf
+@injectSelf({ singleton: true })
+export class SingletonService {}
+```
+```ts
+// @injectFor
+@injectFor(IService, { singleton: true })
+export class SingletonService {}
+```
+```ts
+// register
+@injectable()
+export class SingletonService {}
+
+Injector.register(IService, new SingletonService());
+// or use factory
+Injector.register(IService, () => new SingletonService());
+// or
+Injector.register(IService, SingletonService, { singleton: true });
 ```
 # Also see
 [mp-event](https://www.npmjs.com/package/mp-event): a simple event subscription publishing system implementation;

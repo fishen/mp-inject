@@ -2,17 +2,28 @@ import { defaultConfigOptions, IConfigOptions } from "./config";
 import { INJECTED_CLASS_TAG, INJECTED_PROPERTIES, PROPERTIES_BOUND } from "./constants";
 import reflect from "./reflect";
 
+const SINGLE_VALUE_KEY = Symbol("single value's key");
 // tslint:disable-next-line
-export type RegisterType = Function;
+export type RegisterType = Function & { [SINGLE_VALUE_KEY]?: any };
 
-const INJECT_ITEMS = new Map<any, any>();
+const INJECT_ITEMS = new Map<any, [any, IRegisterOptions?]>();
+
+export interface IRegisterOptions {
+    /**
+     * Whether it is a singleton pattern
+     * @default false
+     * @since 2.1.0
+     */
+    singleton?: boolean;
+}
 
 export class Injector {
 
     /**
      * Register a service for injection.
-     * @param type The service type to be register
+     * @param type The service type to be register.
      * @param value The associated value can be a factory function.
+     * @param options The registration options.
      *
      * @example
      * Injector.register(String, "default value");
@@ -20,10 +31,11 @@ export class Injector {
      * class Demo{}
      * Injector.register(Demo, new Demo());
      */
-    public static register(type: RegisterType, value: any): void {
+    public static register(type: RegisterType, value: any, options?: IRegisterOptions): void {
         if (typeof type !== "function") { throw new TypeError(`The 'type' parameter must be a function type.`); }
         const factory = typeof value === "function" ? value : () => value;
-        INJECT_ITEMS.set(type, factory);
+        INJECT_ITEMS.set(type, [factory, options]);
+        delete type[SINGLE_VALUE_KEY];
     }
 
     /**
@@ -40,12 +52,21 @@ export class Injector {
         if (!INJECT_ITEMS.has(type)) {
             throw new Error(`Missing type ${type.name} injection`);
         }
-        const factory = INJECT_ITEMS.get(type);
+        const [factory, options] = INJECT_ITEMS.get(type);
         const prototype = factory.prototype;
-        if (prototype && reflect.hasMetadata(INJECTED_CLASS_TAG, prototype)) {
-            return new factory(...args);
+        const singleton = type instanceof Object && options && options.singleton;
+        if (singleton && SINGLE_VALUE_KEY in type) {
+            return type[SINGLE_VALUE_KEY];
         }
-        return factory.apply(null, args);
+        let result;
+        if (prototype && reflect.hasMetadata(INJECTED_CLASS_TAG, prototype)) {
+            result = new factory(...args);
+        } else {
+            result = factory.apply(null, args);
+        }
+        // tslint:disable-next-line
+        singleton && (type[SINGLE_VALUE_KEY] = result);
+        return result;
     }
 
     /**

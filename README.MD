@@ -115,11 +115,6 @@ export class SingletonService {}
 // register
 @injectable()
 export class SingletonService {}
-
-Injector.register(IService, new SingletonService());
-// or use factory
-Injector.register(IService, () => new SingletonService());
-// or
 Injector.register(IService, SingletonService, { singleton: true });
 ```
 # Also see

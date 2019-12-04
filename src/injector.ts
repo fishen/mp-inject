@@ -1,8 +1,7 @@
 import { defaultConfigOptions, IConfigOptions } from "./config";
-import { INJECTED_CLASS_TAG, INJECTED_PROPERTIES, PROPERTIES_BOUND } from "./constants";
+import { INJECTED_CLASS_TAG, INJECTED_PROPERTIES, PROPERTIES_BOUND, SINGLE_VALUE_KEY } from "./constants";
 import reflect from "./reflect";
 
-const SINGLE_VALUE_KEY = Symbol("single value's key");
 // tslint:disable-next-line
 export type RegisterType = Function & { [SINGLE_VALUE_KEY]?: any };
 

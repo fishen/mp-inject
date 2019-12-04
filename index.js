@@ -99,6 +99,7 @@ exports.INJECTED_ARGUMENTS = Symbol("injected arguments");
 exports.PROPERTIES_BOUND = Symbol("properties bound");
 exports.INJECTED_CLASS_TAG = Symbol("injected class tag");
 exports.PROPERTIES_BINDER = Symbol("properties binder");
+exports.SINGLE_VALUE_KEY = Symbol("single value's key");
 
 
 /***/ }),
@@ -112,7 +113,6 @@ var tslib_1 = __webpack_require__(2);
 var config_1 = __webpack_require__(3);
 var constants_1 = __webpack_require__(0);
 var reflect_1 = tslib_1.__importDefault(__webpack_require__(4));
-var SINGLE_VALUE_KEY = Symbol("single value's key");
 var INJECT_ITEMS = new Map();
 var Injector = /** @class */ (function () {
     function Injector() {
@@ -135,7 +135,7 @@ var Injector = /** @class */ (function () {
         }
         var factory = typeof value === "function" ? value : function () { return value; };
         INJECT_ITEMS.set(type, [factory, options]);
-        delete type[SINGLE_VALUE_KEY];
+        delete type[constants_1.SINGLE_VALUE_KEY];
     };
     /**
      * Get the value corresponding to a specific type, the type must be registered in advance.
@@ -158,8 +158,8 @@ var Injector = /** @class */ (function () {
         var _a = tslib_1.__read(INJECT_ITEMS.get(type), 2), factory = _a[0], options = _a[1];
         var prototype = factory.prototype;
         var singleton = type instanceof Object && options && options.singleton;
-        if (singleton && SINGLE_VALUE_KEY in type) {
-            return type[SINGLE_VALUE_KEY];
+        if (singleton && constants_1.SINGLE_VALUE_KEY in type) {
+            return type[constants_1.SINGLE_VALUE_KEY];
         }
         var result;
         if (prototype && reflect_1.default.hasMetadata(constants_1.INJECTED_CLASS_TAG, prototype)) {
@@ -169,7 +169,7 @@ var Injector = /** @class */ (function () {
             result = factory.apply(null, args);
         }
         // tslint:disable-next-line
-        singleton && (type[SINGLE_VALUE_KEY] = result);
+        singleton && (type[constants_1.SINGLE_VALUE_KEY] = result);
         return result;
     };
     /**

@@ -6,3 +6,4 @@ export const INJECTED_ARGUMENTS = Symbol("injected arguments");
 export const PROPERTIES_BOUND = Symbol("properties bound");
 export const INJECTED_CLASS_TAG = Symbol("injected class tag");
 export const PROPERTIES_BINDER = Symbol("properties binder");
+export const SINGLE_VALUE_KEY = Symbol("single value's key");

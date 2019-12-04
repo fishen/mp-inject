@@ -8,7 +8,7 @@ declare module 'mp-inject' {
 
 declare module 'mp-inject/injector' {
     import { IConfigOptions } from "mp-inject/config";
-    const SINGLE_VALUE_KEY: unique symbol;
+    import { SINGLE_VALUE_KEY } from "mp-inject/constants";
     export type RegisterType = Function & {
             [SINGLE_VALUE_KEY]?: any;
     };
@@ -58,7 +58,6 @@ declare module 'mp-inject/injector' {
                 */
             static bindProperties(instance: any, prototype: object, forcibly?: boolean): void;
     }
-    export {};
 }
 
 declare module 'mp-inject/inject' {
@@ -105,6 +104,7 @@ declare module 'mp-inject/constants' {
     export const PROPERTIES_BOUND: unique symbol;
     export const INJECTED_CLASS_TAG: unique symbol;
     export const PROPERTIES_BINDER: unique symbol;
+    export const SINGLE_VALUE_KEY: unique symbol;
 }
 
 declare module 'mp-inject/config' {

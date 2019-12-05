@@ -1,14 +1,11 @@
 export interface IConfigOptions {
     /**
-     * The method name to bind properties, default use onLoad or attached methods.
-     * @default 'onLoad' and 'attached'.
+     * The method name to bind properties, default use constructor.
+     * @default 'constructor'
      */
     propertiesBinder?: string;
-    /**
-     * Whether to bind properties in the constructor.
-     * @default true
-     */
-    bindPropertiesInConstructor?: boolean;
 }
 
-export const defaultConfigOptions = { bindPropertiesInConstructor: true };
+export const defaultConfigOptions = {
+    propertiesBinder: "constructor",
+};

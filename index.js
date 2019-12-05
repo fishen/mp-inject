@@ -81,7 +81,7 @@
 /******/
 /******/
 /******/ 	// Load entry module and return exports
-/******/ 	return __webpack_require__(__webpack_require__.s = 5);
+/******/ 	return __webpack_require__(__webpack_require__.s = 4);
 /******/ })
 /************************************************************************/
 /******/ ([
@@ -91,28 +91,10 @@
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.DESIGN_PARAM_TYPES = "design:paramtypes";
-exports.DESIGN_TYPE = "design:type";
-exports.DESIGN_RETURN_TYPE = "design:returntype";
-exports.INJECTED_PROPERTIES = Symbol("injected properties");
-exports.INJECTED_ARGUMENTS = Symbol("injected arguments");
-exports.PROPERTIES_BOUND = Symbol("properties bound");
-exports.INJECTED_CLASS_TAG = Symbol("injected class tag");
-exports.PROPERTIES_BINDER = Symbol("properties binder");
-exports.SINGLE_VALUE_KEY = Symbol("single value's key");
-
-
-/***/ }),
-/* 1 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-Object.defineProperty(exports, "__esModule", { value: true });
-var tslib_1 = __webpack_require__(2);
-var config_1 = __webpack_require__(3);
-var constants_1 = __webpack_require__(0);
-var reflect_1 = tslib_1.__importDefault(__webpack_require__(4));
+var tslib_1 = __webpack_require__(1);
+var config_1 = __webpack_require__(5);
+var constants_1 = __webpack_require__(2);
+var reflect_1 = tslib_1.__importDefault(__webpack_require__(3));
 var INJECT_ITEMS = new Map();
 var Injector = /** @class */ (function () {
     function Injector() {
@@ -175,21 +157,22 @@ var Injector = /** @class */ (function () {
     /**
      * Set global injection options
      * @param options injection options
+     * @param target injection target
      */
-    Injector.config = function (options) {
-        Object.assign(config_1.defaultConfigOptions, options);
+    Injector.config = function (options, target) {
+        if (typeof target === "function") {
+            target.prototype[constants_1.GLOBAL_CONFIG_KEY] = options;
+        }
+        else {
+            Object.assign(config_1.defaultConfigOptions, options);
+        }
     };
     /**
      * Binding injected property members
      * @param instance instance object
      * @param prototype prototype object
-     * @param forcibly Whether to force the setting
      */
-    Injector.bindProperties = function (instance, prototype, forcibly) {
-        if (forcibly === void 0) { forcibly = false; }
-        if (instance[constants_1.PROPERTIES_BOUND] && !forcibly) {
-            return;
-        }
+    Injector.bindProperties = function (instance, prototype) {
         var properties = reflect_1.default.getMetadata(constants_1.INJECTED_PROPERTIES, prototype);
         if (!properties) {
             return;
@@ -203,7 +186,16 @@ var Injector = /** @class */ (function () {
                 console.error(name, prototype.constructor.name, err);
             }
         });
-        instance[constants_1.PROPERTIES_BOUND] = true;
+    };
+    /**
+     * Get global config options.
+     * @param target injection target.
+     * @param options inection options.
+     */
+    Injector.getConfig = function (target, options) {
+        target = target || {};
+        var prototype = typeof target === "function" ? target.prototype : Object.getPrototypeOf(target);
+        return Object.assign({}, config_1.defaultConfigOptions, prototype[constants_1.GLOBAL_CONFIG_KEY], options);
     };
     return Injector;
 }());
@@ -211,23 +203,30 @@ exports.Injector = Injector;
 
 
 /***/ }),
-/* 2 */
+/* 1 */
 /***/ (function(module, exports) {
 
 module.exports = require("tslib");
 
 /***/ }),
-/* 3 */
+/* 2 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.defaultConfigOptions = { bindPropertiesInConstructor: true };
+exports.DESIGN_PARAM_TYPES = "design:paramtypes";
+exports.DESIGN_TYPE = "design:type";
+exports.DESIGN_RETURN_TYPE = "design:returntype";
+exports.INJECTED_PROPERTIES = Symbol("injected properties");
+exports.INJECTED_ARGUMENTS = Symbol("injected arguments");
+exports.INJECTED_CLASS_TAG = Symbol("injected class tag");
+exports.GLOBAL_CONFIG_KEY = Symbol("global config key");
+exports.SINGLE_VALUE_KEY = Symbol("single value's key");
 
 
 /***/ }),
-/* 4 */
+/* 3 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -254,21 +253,31 @@ exports.default = reflect;
 /* WEBPACK VAR INJECTION */}.call(this, __webpack_require__(6)))
 
 /***/ }),
-/* 5 */
+/* 4 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-var injector_1 = __webpack_require__(1);
+var injector_1 = __webpack_require__(0);
 exports.Injector = injector_1.Injector;
 var inject_1 = __webpack_require__(8);
 exports.inject = inject_1.inject;
 exports.injectable = inject_1.injectable;
 exports.injectFor = inject_1.injectFor;
 exports.injectSelf = inject_1.injectSelf;
-var constants_1 = __webpack_require__(0);
-exports.PROPERTIES_BINDER = constants_1.PROPERTIES_BINDER;
+
+
+/***/ }),
+/* 5 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.defaultConfigOptions = {
+    propertiesBinder: "constructor",
+};
 
 
 /***/ }),
@@ -310,11 +319,10 @@ module.exports = require("reflect-metadata");
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-var tslib_1 = __webpack_require__(2);
-var config_1 = __webpack_require__(3);
-var constants_1 = __webpack_require__(0);
-var injector_1 = __webpack_require__(1);
-var reflect_1 = tslib_1.__importDefault(__webpack_require__(4));
+var tslib_1 = __webpack_require__(1);
+var constants_1 = __webpack_require__(2);
+var injector_1 = __webpack_require__(0);
+var reflect_1 = tslib_1.__importDefault(__webpack_require__(3));
 function defineData(metadataKey, metadataValue, target) {
     var arr = reflect_1.default.getMetadata(metadataKey, target);
     arr = arr ? arr.slice() : [];
@@ -367,29 +375,13 @@ exports.inject = inject;
  * Automatically inject properties or constructor arguments for the current class
  */
 function injectable(options) {
-    var opts = Object.assign({}, config_1.defaultConfigOptions, options);
-    var bindPropertiesInConstructor = opts.bindPropertiesInConstructor;
-    var propertiesBinder = opts.propertiesBinder;
     return function (ctor) {
+        var propertiesBinder = injector_1.Injector.getConfig(ctor, options).propertiesBinder;
         reflect_1.default.defineMetadata(constants_1.INJECTED_CLASS_TAG, true, ctor.prototype);
+        var bindPropertiesInConstructor = propertiesBinder === "constructor";
         var hasProperties = reflect_1.default.hasMetadata(constants_1.INJECTED_PROPERTIES, ctor.prototype);
-        if (hasProperties) {
-            if (propertiesBinder === "constructor") {
-                bindPropertiesInConstructor = true;
-            }
-            else if (typeof propertiesBinder === "string") {
-                bindProperties(ctor, propertiesBinder);
-                bindPropertiesInConstructor = false;
-            }
-            else if (typeof ctor.prototype[constants_1.PROPERTIES_BINDER] === "string") {
-                bindProperties(ctor, ctor.prototype[constants_1.PROPERTIES_BINDER]);
-                bindPropertiesInConstructor = false;
-            }
-            else if (!bindPropertiesInConstructor) {
-                bindProperties(ctor, "onLoad");
-                bindProperties(ctor, "attached");
-                bindPropertiesInConstructor = false;
-            }
+        if (!bindPropertiesInConstructor && hasProperties && typeof propertiesBinder === "string") {
+            bindProperties(ctor, propertiesBinder);
         }
         var hasArguments = reflect_1.default.hasMetadata(constants_1.INJECTED_ARGUMENTS, ctor);
         if (hasProperties && bindPropertiesInConstructor || hasArguments) {
@@ -408,7 +400,7 @@ function injectable(options) {
                     });
                     _this = _super.apply(this, tslib_1.__spread(newArgs)) || this;
                     // tslint:disable-next-line
-                    bindPropertiesInConstructor && injector_1.Injector.bindProperties(_this, ctor.prototype);
+                    hasProperties && bindPropertiesInConstructor && injector_1.Injector.bindProperties(_this, ctor.prototype);
                     return _this;
                 }
                 return class_1;

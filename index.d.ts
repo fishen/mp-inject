@@ -3,7 +3,6 @@
 declare module 'mp-inject' {
     export { Injector } from "mp-inject/injector";
     export { inject, injectable, injectFor, injectSelf } from "mp-inject/inject";
-    export { PROPERTIES_BINDER } from "mp-inject/constants";
 }
 
 declare module 'mp-inject/injector' {
@@ -48,15 +47,21 @@ declare module 'mp-inject/injector' {
             /**
                 * Set global injection options
                 * @param options injection options
+                * @param target injection target
                 */
-            static config(options: IConfigOptions): void;
+            static config(options: IConfigOptions, target?: RegisterType): void;
             /**
                 * Binding injected property members
                 * @param instance instance object
                 * @param prototype prototype object
-                * @param forcibly Whether to force the setting
                 */
-            static bindProperties(instance: any, prototype: object, forcibly?: boolean): void;
+            static bindProperties(instance: any, prototype: object): void;
+            /**
+                * Get global config options.
+                * @param target injection target.
+                * @param options inection options.
+                */
+            static getConfig(target?: any, options?: IConfigOptions): IConfigOptions;
     }
 }
 
@@ -95,33 +100,27 @@ declare module 'mp-inject/inject' {
     export {};
 }
 
+declare module 'mp-inject/config' {
+    export interface IConfigOptions {
+        /**
+          * The method name to bind properties, default use constructor.
+          * @default 'constructor'
+          */
+        propertiesBinder?: string;
+    }
+    export const defaultConfigOptions: {
+        propertiesBinder: string;
+    };
+}
+
 declare module 'mp-inject/constants' {
     export const DESIGN_PARAM_TYPES = "design:paramtypes";
     export const DESIGN_TYPE = "design:type";
     export const DESIGN_RETURN_TYPE = "design:returntype";
     export const INJECTED_PROPERTIES: unique symbol;
     export const INJECTED_ARGUMENTS: unique symbol;
-    export const PROPERTIES_BOUND: unique symbol;
     export const INJECTED_CLASS_TAG: unique symbol;
-    export const PROPERTIES_BINDER: unique symbol;
+    export const GLOBAL_CONFIG_KEY: unique symbol;
     export const SINGLE_VALUE_KEY: unique symbol;
-}
-
-declare module 'mp-inject/config' {
-    export interface IConfigOptions {
-            /**
-                * The method name to bind properties, default use onLoad or attached methods.
-                * @default 'onLoad' and 'attached'.
-                */
-            propertiesBinder?: string;
-            /**
-                * Whether to bind properties in the constructor.
-                * @default true
-                */
-            bindPropertiesInConstructor?: boolean;
-    }
-    export const defaultConfigOptions: {
-            bindPropertiesInConstructor: boolean;
-    };
 }
 

@@ -1,8 +1,8 @@
 
-import { defaultConfigOptions, IConfigOptions } from "./config";
+import { IConfigOptions } from "./config";
 import {
-    DESIGN_PARAM_TYPES, DESIGN_TYPE, INJECTED_ARGUMENTS,
-    INJECTED_CLASS_TAG, INJECTED_PROPERTIES, PROPERTIES_BINDER,
+    DESIGN_PARAM_TYPES, DESIGN_TYPE, INJECTED_ARGUMENTS, INJECTED_CLASS_TAG,
+    INJECTED_PROPERTIES,
 } from "./constants";
 import { Injector, IRegisterOptions, RegisterType } from "./injector";
 import reflect from "./reflect";
@@ -67,26 +67,13 @@ export function inject(options?: IInjectOptions | RegisterType) {
  * Automatically inject properties or constructor arguments for the current class
  */
 export function injectable(options?: IConfigOptions) {
-    const opts = Object.assign({}, defaultConfigOptions, options);
-    let { bindPropertiesInConstructor } = opts;
-    const propertiesBinder = opts.propertiesBinder;
     return function(ctor: new (...args: any) => any): any {
+        const { propertiesBinder } = Injector.getConfig(ctor, options);
         reflect.defineMetadata(INJECTED_CLASS_TAG, true, ctor.prototype);
+        const bindPropertiesInConstructor = propertiesBinder === "constructor";
         const hasProperties = reflect.hasMetadata(INJECTED_PROPERTIES, ctor.prototype);
-        if (hasProperties) {
-            if (propertiesBinder === "constructor") {
-                bindPropertiesInConstructor = true;
-            } else if (typeof propertiesBinder === "string") {
-                bindProperties(ctor, propertiesBinder);
-                bindPropertiesInConstructor = false;
-            } else if (typeof ctor.prototype[PROPERTIES_BINDER] === "string") {
-                bindProperties(ctor, ctor.prototype[PROPERTIES_BINDER]);
-                bindPropertiesInConstructor = false;
-            } else if (!bindPropertiesInConstructor) {
-                bindProperties(ctor, "onLoad");
-                bindProperties(ctor, "attached");
-                bindPropertiesInConstructor = false;
-            }
+        if (!bindPropertiesInConstructor && hasProperties && typeof propertiesBinder === "string") {
+            bindProperties(ctor, propertiesBinder);
         }
         const hasArguments = reflect.hasMetadata(INJECTED_ARGUMENTS, ctor);
         if (hasProperties && bindPropertiesInConstructor || hasArguments) {
@@ -96,7 +83,7 @@ export function injectable(options?: IConfigOptions) {
                     injectedArgs.forEach(({ index, args, type }) => newArgs[index] = Injector.get(type, ...args));
                     super(...newArgs);
                     // tslint:disable-next-line
-                    bindPropertiesInConstructor && Injector.bindProperties(this, ctor.prototype);
+                    hasProperties && bindPropertiesInConstructor && Injector.bindProperties(this, ctor.prototype);
                 }
             };
         }

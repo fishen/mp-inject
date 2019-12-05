@@ -4,7 +4,7 @@ import { IService } from "./service";
 import { expect } from "chai";
 import "mocha";
 
-Injector.config({ bindPropertiesInConstructor: false });
+Injector.config({ propertiesBinder: 'onLoad' });
 
 @injectable()
 export class Service implements IService {
@@ -21,6 +21,7 @@ export class Demo {
     age: number;
     @inject()
     service: IService;
+    onLoad() { }
 }
 
 let instance: Demo;
@@ -32,15 +33,16 @@ describe("global config", () => {
         Injector.register(IService, Service);
         Injector.register(Demo, Demo);
         instance = Injector.get<Demo>(Demo);
-        (instance as any).onLoad();
     });
-    it("should be string.", () => {
-        expect(instance.name).is.a('string');
+    it("should be undefined.", () => {
+        expect(instance.name).to.be.undefined;
     });
     it("should be number.", () => {
+        instance.onLoad();
         expect(instance.age).is.a('number');
     });
     it("should be a class instance.", () => {
+        instance.onLoad();
         expect(instance.service).to.be.instanceOf(Service);
     });
 });

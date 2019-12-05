@@ -70,10 +70,9 @@ describe("demo", () => {
 });
 ```
 ## Injection options
-* propertiesBinder(string,optional): The method name to bind properties, default use onLoad or attached methods. default use `onLoad` and `attached`.
-* bindPropertiesInConstructor(boolean,optional): Whether to bind properties in the constructor. default is `true`.
+* propertiesBinder(string,optional): The method name to bind properties, default use `constructor`.
 # API
-## Injector.register(type:Function, value:Function|object, options?:object):void
+## Injector.register(type: Function, value:Function | object, options?:object) : void
 Register a service for injection.
 * type: The service type to be register.
 * value: The associated value can be a factory function.
@@ -85,7 +84,7 @@ Injector.register(Number, () => Math.random());
 class Demo{}
 Injector.register(Demo, new Demo());
 ```
-## Injector.get<T>(type:Function, ...args:any[]):T
+## Injector.get<T>(type: Function, ...args: any[]): T
 Get the value corresponding to a specific type, the type must be registered in advance.
 * type: The type registered.
 * args: The parameters required by the factory function.
@@ -94,11 +93,13 @@ class Demo{}
 Injector.register(Demo, new Demo());
 const instance = ServiceManager.get<Demo>(Demo);
 ```
-## Injector.config(options: object): void
+## Injector.config(options: object, target?: Function): void
 Set global injection options
 * options: Injection options
+* * propertiesBinder(string,optional): The method name to bind properties, default use `constructor`.
+* target(Function, optional): Injection target, such as `Component`.
 ```ts
-Injector.config({ bindPropertiesInConstructor: false });
+Injector.config({ propertiesBinder: "componentDidMount" });
 ```
 # Singleton
 ```ts

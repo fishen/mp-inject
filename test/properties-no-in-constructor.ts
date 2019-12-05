@@ -10,7 +10,7 @@ export class Service implements IService {
     num: number;
 }
 
-@injectable({ bindPropertiesInConstructor: false })
+@injectable({ propertiesBinder: 'onLoad' })
 export class Demo {
     @inject()
     name: string;

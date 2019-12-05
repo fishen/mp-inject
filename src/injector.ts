@@ -1,5 +1,5 @@
 import { defaultConfigOptions, IConfigOptions } from "./config";
-import { INJECTED_CLASS_TAG, INJECTED_PROPERTIES, PROPERTIES_BOUND, SINGLE_VALUE_KEY } from "./constants";
+import { GLOBAL_CONFIG_KEY, INJECTED_CLASS_TAG, INJECTED_PROPERTIES, SINGLE_VALUE_KEY } from "./constants";
 import reflect from "./reflect";
 
 // tslint:disable-next-line
@@ -71,19 +71,22 @@ export class Injector {
     /**
      * Set global injection options
      * @param options injection options
+     * @param target injection target
      */
-    public static config(options: IConfigOptions) {
-        Object.assign(defaultConfigOptions, options);
+    public static config(options: IConfigOptions, target?: RegisterType) {
+        if (typeof target === "function") {
+            target.prototype[GLOBAL_CONFIG_KEY] = options;
+        } else {
+            Object.assign(defaultConfigOptions, options);
+        }
     }
 
     /**
      * Binding injected property members
      * @param instance instance object
      * @param prototype prototype object
-     * @param forcibly Whether to force the setting
      */
-    public static bindProperties(instance: any, prototype: object, forcibly: boolean = false) {
-        if (instance[PROPERTIES_BOUND] && !forcibly) { return; }
+    public static bindProperties(instance: any, prototype: object) {
         const properties: any[] = reflect.getMetadata(INJECTED_PROPERTIES, prototype);
         if (!properties) { return; }
         properties.forEach(({ name, type, args }) => {
@@ -93,6 +96,19 @@ export class Injector {
                 console.error(name, prototype.constructor.name, err);
             }
         });
-        instance[PROPERTIES_BOUND] = true;
+    }
+
+    /**
+     * Get global config options.
+     * @param target injection target.
+     * @param options inection options.
+     */
+    public static getConfig(target?: any, options?: IConfigOptions): IConfigOptions {
+        target = target || {};
+        const prototype = typeof target === "function" ? target.prototype : Object.getPrototypeOf(target);
+        return Object.assign({},
+            defaultConfigOptions,
+            prototype[GLOBAL_CONFIG_KEY],
+            options);
     }
 }

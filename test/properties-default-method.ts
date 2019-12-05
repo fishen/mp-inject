@@ -10,7 +10,7 @@ export class Service implements IService {
     num: number;
 }
 
-@injectable({ bindPropertiesInConstructor: false })
+@injectable({ propertiesBinder: 'constructor' })
 export class Demo {
 
     @inject()
@@ -29,7 +29,6 @@ describe("bind properties in default method", () => {
         Injector.register(IService, Service);
         Injector.register(Demo, Demo);
         instance = Injector.get<Demo>(Demo);
-        (instance as any).onLoad();
     });
     it("should be string.", () => {
         expect(instance.name).is.a('string');

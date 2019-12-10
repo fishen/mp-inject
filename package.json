@@ -1,6 +1,6 @@
 {
   "name": "mp-inject",
-  "version": "2.2.0",
+  "version": "2.2.1",
   "description": "A simple dependency injection library for mini-programs.",
   "main": "index.js",
   "scripts": {
@@ -29,17 +29,17 @@
     "url": "https://github.com/fishen/mp-inject.git"
   },
   "devDependencies": {
-    "@types/chai": "^4.2.5",
+    "@types/chai": "^4.2.6",
     "@types/mocha": "^5.2.7",
     "chai": "^4.2.0",
     "dts-bundle-webpack": "^1.0.2",
     "mocha": "^6.2.2",
-    "ts-loader": "^6.0.4",
-    "ts-node": "^8.3.0",
-    "tslint": "^5.18.0",
-    "typescript": "^3.5.3",
-    "webpack": "^4.35.3",
-    "webpack-cli": "^3.3.6",
+    "ts-loader": "^6.2.1",
+    "ts-node": "^8.5.4",
+    "tslint": "^5.20.1",
+    "typescript": "^3.7.3",
+    "webpack": "^4.41.2",
+    "webpack-cli": "^3.3.10",
     "webpack-node-externals": "^1.7.2"
   },
   "dependencies": {

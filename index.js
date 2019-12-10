@@ -323,29 +323,16 @@ var tslib_1 = __webpack_require__(1);
 var constants_1 = __webpack_require__(2);
 var injector_1 = __webpack_require__(0);
 var reflect_1 = tslib_1.__importDefault(__webpack_require__(3));
-function defineData(metadataKey, metadataValue, target) {
-    var arr = reflect_1.default.getMetadata(metadataKey, target);
-    arr = arr ? arr.slice() : [];
-    arr.push(metadataValue);
-    reflect_1.default.defineMetadata(metadataKey, arr, target);
-}
-function bindProperties(ctor, method) {
-    var original = ctor.prototype[method];
-    if (typeof original === "function" || original === undefined) {
-        ctor.prototype[method] = function () {
-            var methodArgs = [];
-            for (var _i = 0; _i < arguments.length; _i++) {
-                methodArgs[_i] = arguments[_i];
-            }
-            injector_1.Injector.bindProperties(this, ctor.prototype);
-            return original && original.apply(this, methodArgs);
-        };
-    }
-}
 /**
  * Tag arguments or properties to inject.
  */
 function inject(options) {
+    function bindInjections(metadataKey, metadataValue, target) {
+        var arr = reflect_1.default.getMetadata(metadataKey, target);
+        arr = arr ? arr.slice() : [];
+        arr.push(metadataValue);
+        reflect_1.default.defineMetadata(metadataKey, arr, target);
+    }
     var opts = typeof options === "function" ? { type: options } : Object.assign({}, options);
     return function (target, name, index) {
         var _a = opts, type = _a.type, args = _a.args;
@@ -356,7 +343,7 @@ function inject(options) {
             if (typeof type !== "function") {
                 throw new Error("Unknown property type of [" + ctor.name + "|" + name + "].");
             }
-            defineData(constants_1.INJECTED_PROPERTIES, { type: type, args: args, name: name }, target);
+            bindInjections(constants_1.INJECTED_PROPERTIES, { type: type, args: args, name: name }, target);
         }
         else if (typeof index === "number") {
             if (typeof type !== "function") {
@@ -366,7 +353,7 @@ function inject(options) {
                     throw new Error("Unknown argument type of [" + ctor.name + "|" + index + "].");
                 }
             }
-            defineData(constants_1.INJECTED_ARGUMENTS, { type: type, args: args, name: name, index: index }, target);
+            bindInjections(constants_1.INJECTED_ARGUMENTS, { type: type, args: args, name: name, index: index }, target);
         }
     };
 }
@@ -375,6 +362,19 @@ exports.inject = inject;
  * Automatically inject properties or constructor arguments for the current class
  */
 function injectable(options) {
+    function bindProperties(ctor, method) {
+        var original = ctor.prototype[method];
+        if (typeof original === "function" || original === undefined) {
+            ctor.prototype[method] = function () {
+                var methodArgs = [];
+                for (var _i = 0; _i < arguments.length; _i++) {
+                    methodArgs[_i] = arguments[_i];
+                }
+                injector_1.Injector.bindProperties(this, ctor.prototype);
+                return original && original.apply(this, methodArgs);
+            };
+        }
+    }
     return function (ctor) {
         var propertiesBinder = injector_1.Injector.getConfig(ctor, options).propertiesBinder;
         reflect_1.default.defineMetadata(constants_1.INJECTED_CLASS_TAG, true, ctor.prototype);
@@ -394,7 +394,11 @@ function injectable(options) {
                     }
                     var _this = this;
                     var injectedArgs = reflect_1.default.getMetadata(constants_1.INJECTED_ARGUMENTS, ctor) || [];
-                    injectedArgs.forEach(function (_a) {
+                    injectedArgs.filter(function (_a) {
+                        var index = _a.index;
+                        return newArgs[index] === undefined;
+                    })
+                        .forEach(function (_a) {
                         var index = _a.index, args = _a.args, type = _a.type;
                         return newArgs[index] = injector_1.Injector.get.apply(injector_1.Injector, tslib_1.__spread([type], args));
                     });

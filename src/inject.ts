@@ -18,27 +18,26 @@ interface IInjectOptions {
     type?: RegisterType;
 }
 
-function defineData(metadataKey: any, metadataValue: any, target: object) {
-    let arr = reflect.getMetadata(metadataKey, target);
-    arr = arr ? arr.slice() : [];
-    arr.push(metadataValue);
-    reflect.defineMetadata(metadataKey, arr, target);
+interface IInjectedProperty {
+    type: any;
+    args: any[];
+    name: string;
 }
 
-function bindProperties(ctor: new (...args: any) => void, method: string) {
-    const original = ctor.prototype[method];
-    if (typeof original === "function" || original === undefined) {
-        ctor.prototype[method] = function(...methodArgs: any) {
-            Injector.bindProperties(this, ctor.prototype);
-            return original && original.apply(this, methodArgs);
-        };
-    }
+interface IInjectedArgument extends IInjectedProperty {
+    index: number;
 }
 
 /**
  * Tag arguments or properties to inject.
  */
 export function inject(options?: IInjectOptions | RegisterType) {
+    function bindInjections<T extends IInjectedProperty>(metadataKey: symbol, metadataValue: T, target: object) {
+        let arr = reflect.getMetadata(metadataKey, target);
+        arr = arr ? arr.slice() : [];
+        arr.push(metadataValue);
+        reflect.defineMetadata(metadataKey, arr, target);
+    }
     const opts = typeof options === "function" ? { type: options } : Object.assign({}, options);
     return function(target: any, name: string, index?: number) {
         let { type, args } = opts as IInjectOptions;
@@ -49,7 +48,7 @@ export function inject(options?: IInjectOptions | RegisterType) {
             if (typeof type !== "function") {
                 throw new Error(`Unknown property type of [${ctor.name}|${name}].`);
             }
-            defineData(INJECTED_PROPERTIES, { type, args, name }, target);
+            bindInjections(INJECTED_PROPERTIES, { type, args, name }, target);
         } else if (typeof index === "number") {
             if (typeof type !== "function") {
                 const types = reflect.getMetadata(DESIGN_PARAM_TYPES, target, name);
@@ -58,7 +57,7 @@ export function inject(options?: IInjectOptions | RegisterType) {
                     throw new Error(`Unknown argument type of [${ctor.name}|${index}].`);
                 }
             }
-            defineData(INJECTED_ARGUMENTS, { type, args, name, index }, target);
+            bindInjections(INJECTED_ARGUMENTS, { type, args, name, index }, target);
         }
     };
 }
@@ -67,6 +66,15 @@ export function inject(options?: IInjectOptions | RegisterType) {
  * Automatically inject properties or constructor arguments for the current class
  */
 export function injectable(options?: IConfigOptions) {
+    function bindProperties(ctor: new (...args: any) => void, method: string) {
+        const original = ctor.prototype[method];
+        if (typeof original === "function" || original === undefined) {
+            ctor.prototype[method] = function(...methodArgs: any) {
+                Injector.bindProperties(this, ctor.prototype);
+                return original && original.apply(this, methodArgs);
+            };
+        }
+    }
     return function(ctor: new (...args: any) => any): any {
         const { propertiesBinder } = Injector.getConfig(ctor, options);
         reflect.defineMetadata(INJECTED_CLASS_TAG, true, ctor.prototype);
@@ -79,8 +87,9 @@ export function injectable(options?: IConfigOptions) {
         if (hasProperties && bindPropertiesInConstructor || hasArguments) {
             return class extends ctor {
                 constructor(...newArgs: any) {
-                    const injectedArgs: any[] = reflect.getMetadata(INJECTED_ARGUMENTS, ctor) || [];
-                    injectedArgs.forEach(({ index, args, type }) => newArgs[index] = Injector.get(type, ...args));
+                    const injectedArgs: IInjectedArgument[] = reflect.getMetadata(INJECTED_ARGUMENTS, ctor) || [];
+                    injectedArgs.filter(({ index }) => newArgs[index] === undefined)
+                        .forEach(({ index, args, type }) => newArgs[index] = Injector.get(type, ...args));
                     super(...newArgs);
                     // tslint:disable-next-line
                     hasProperties && bindPropertiesInConstructor && Injector.bindProperties(this, ctor.prototype);

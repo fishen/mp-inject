@@ -9,7 +9,7 @@
     "fix": "tslint -c tslint.json 'src/**/*.ts' --fix",
     "type-check": "tsc --noEmit",
     "type-check:watch": "npm run type-check -- --watch",
-    "build": "npm run type-check&&npm run fix&&webpack&& rm -rf dts",
+    "build": "npm run type-check&&npm run fix&&webpack",
     "pack": "npm run build&&npm pack"
   },
   "keywords": [
@@ -31,8 +31,8 @@
   "devDependencies": {
     "@types/chai": "^4.2.6",
     "@types/mocha": "^5.2.7",
+    "bundle-dts": "^1.1.1",
     "chai": "^4.2.0",
-    "dts-bundle-webpack": "^1.0.2",
     "mocha": "^6.2.2",
     "ts-loader": "^6.2.1",
     "ts-node": "^8.5.4",

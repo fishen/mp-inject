@@ -63,6 +63,11 @@ declare module "mp-inject/src/injector" {
          */
         static get<T = any>(type: RegisterType, ...args: any[]): T;
         /**
+         * Clear singleton of specified type, if type is omitted, clear all singletons of type.
+         * @param type The specified type to clear
+         */
+        static clearSingletons(type?: RegisterType): void;
+        /**
          * Set global injection options
          * @param options injection options
          * @param target injection target

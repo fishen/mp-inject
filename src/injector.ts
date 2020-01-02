@@ -34,7 +34,7 @@ export class Injector {
         if (typeof type !== "function") { throw new TypeError(`The 'type' parameter must be a function type.`); }
         const factory = typeof value === "function" ? value : () => value;
         INJECT_ITEMS.set(type, [factory, options]);
-        delete type[SINGLE_VALUE_KEY];
+        Injector.clearSingletons(type);
     }
 
     /**
@@ -49,7 +49,7 @@ export class Injector {
      */
     public static get<T = any>(type: RegisterType, ...args: any[]): T {
         if (!INJECT_ITEMS.has(type)) {
-            throw new Error(`Missing type ${type.name} injection`);
+            throw new Error(`Missing type ${type && type.name} injection`);
         }
         const [factory, options] = INJECT_ITEMS.get(type);
         const prototype = factory.prototype;
@@ -66,6 +66,20 @@ export class Injector {
         // tslint:disable-next-line
         singleton && (type[SINGLE_VALUE_KEY] = result);
         return result;
+    }
+
+    /**
+     * Clear singleton of specified type, if type is omitted, clear all singletons of type.
+     * @param type The specified type to clear
+     */
+    public static clearSingletons(type?: RegisterType) {
+        if (type === undefined) {
+            Array.from(INJECT_ITEMS.keys()).forEach(Injector.clearSingletons);
+        } else if (INJECT_ITEMS.has(type)) {
+            delete type[SINGLE_VALUE_KEY];
+        } else {
+            throw new Error(`Missing type ${type && type.name} injection`);
+        }
     }
 
     /**

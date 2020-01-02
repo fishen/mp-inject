@@ -72,6 +72,9 @@ describe("demo", () => {
 ## Injection options
 * propertiesBinder(string,optional): The method name to bind properties, default use `constructor`.
 # API
+## Injector.clearSingletons(type?: Function) : void
+Clear singleton of specified type, if type is omitted, clear all singletons's type.
+* type: The singleton type to clear
 ## Injector.register(type: Function, value:Function | object, options?:object) : void
 Register a service for injection.
 * type: The service type to be register.

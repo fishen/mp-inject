@@ -117,7 +117,7 @@ var Injector = /** @class */ (function () {
         }
         var factory = typeof value === "function" ? value : function () { return value; };
         INJECT_ITEMS.set(type, [factory, options]);
-        delete type[constants_1.SINGLE_VALUE_KEY];
+        Injector.clearSingletons(type);
     };
     /**
      * Get the value corresponding to a specific type, the type must be registered in advance.
@@ -135,7 +135,7 @@ var Injector = /** @class */ (function () {
             args[_i - 1] = arguments[_i];
         }
         if (!INJECT_ITEMS.has(type)) {
-            throw new Error("Missing type " + type.name + " injection");
+            throw new Error("Missing type " + (type && type.name) + " injection");
         }
         var _a = tslib_1.__read(INJECT_ITEMS.get(type), 2), factory = _a[0], options = _a[1];
         var prototype = factory.prototype;
@@ -153,6 +153,21 @@ var Injector = /** @class */ (function () {
         // tslint:disable-next-line
         singleton && (type[constants_1.SINGLE_VALUE_KEY] = result);
         return result;
+    };
+    /**
+     * Clear singleton of specified type, if type is omitted, clear all singletons of type.
+     * @param type The specified type to clear
+     */
+    Injector.clearSingletons = function (type) {
+        if (type === undefined) {
+            Array.from(INJECT_ITEMS.keys()).forEach(Injector.clearSingletons);
+        }
+        else if (INJECT_ITEMS.has(type)) {
+            delete type[constants_1.SINGLE_VALUE_KEY];
+        }
+        else {
+            throw new Error("Missing type " + (type && type.name) + " injection");
+        }
     };
     /**
      * Set global injection options

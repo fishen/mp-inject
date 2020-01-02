@@ -38,4 +38,15 @@ describe("singleton", () => {
         expect(service1).not.to.be.eq(service2);
         expect(service2).to.be.eq(service3);
     });
+    it("should be cleaned up properly", () => {
+        const service1 = Injector.get(SingletonService);
+        Injector.clearSingletons(SingletonService);
+        const service2 = Injector.get<SingletonService>(SingletonService);
+        Injector.clearSingletons();
+        const service3 = Injector.get<SingletonService>(SingletonService);
+        const service4 = Injector.get<SingletonService>(SingletonService);
+        expect(service1.num).to.be.not.eq(service2.num);
+        expect(service3.num).to.be.not.eq(service2.num);
+        expect(service3.num).to.be.eq(service4.num);
+    })
 });

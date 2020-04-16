@@ -106,18 +106,19 @@ var Injector = /** @class */ (function () {
      * @param options The registration options.
      *
      * @example
-     * Injector.register(String, "default value");
-     * Injector.register(Number, () => Math.random());
+     * Injector.register("", "default value");
+     * Injector.register(0, () => Math.random());
      * class Demo{}
      * Injector.register(Demo, new Demo());
      */
     Injector.register = function (type, value, options) {
-        if (typeof type !== "function") {
-            throw new TypeError("The 'type' parameter must be a function type.");
+        var validTypes = ['function', 'number', 'string', 'symbol'];
+        var valid = validTypes.indexOf(typeof type) >= 0;
+        if (!valid) {
+            throw new TypeError("The 'type' parameter must be in " + validTypes + ".");
         }
         var factory = typeof value === "function" ? value : function () { return value; };
         INJECT_ITEMS.set(type, [factory, options]);
-        Injector.clearSingletons(type);
     };
     /**
      * Get the value corresponding to a specific type, the type must be registered in advance.
@@ -126,8 +127,9 @@ var Injector = /** @class */ (function () {
      *
      * @example
      * class Demo{}
-     * Injector.register(Demo, new Demo());
-     * const instance = ServiceManager.get(Demo);
+     * Injector.register("demo", new Demo());
+     * const instance = ServiceManager.get("demo");
+     * const typedInstance = ServiceManager.get<Demo>("demo");
      */
     Injector.get = function (type) {
         var args = [];
@@ -135,13 +137,14 @@ var Injector = /** @class */ (function () {
             args[_i - 1] = arguments[_i];
         }
         if (!INJECT_ITEMS.has(type)) {
-            throw new Error("Missing type " + (type && type.name) + " injection");
+            var name_1 = typeof type === 'function' ? type.name : String(type);
+            throw new Error("Missing type " + name_1 + " injection");
         }
-        var _a = tslib_1.__read(INJECT_ITEMS.get(type), 2), factory = _a[0], options = _a[1];
+        var _a = tslib_1.__read(INJECT_ITEMS.get(type), 3), factory = _a[0], options = _a[1], instance = _a[2];
         var prototype = factory.prototype;
         var singleton = type instanceof Object && options && options.singleton;
-        if (singleton && constants_1.SINGLE_VALUE_KEY in type) {
-            return type[constants_1.SINGLE_VALUE_KEY];
+        if (singleton && instance !== undefined) {
+            return instance;
         }
         var result;
         if (prototype && reflect_1.default.hasMetadata(constants_1.INJECTED_CLASS_TAG, prototype)) {
@@ -151,7 +154,7 @@ var Injector = /** @class */ (function () {
             result = factory.apply(null, args);
         }
         // tslint:disable-next-line
-        singleton && (type[constants_1.SINGLE_VALUE_KEY] = result);
+        singleton && (INJECT_ITEMS.get(type)[2] = result);
         return result;
     };
     /**
@@ -163,10 +166,11 @@ var Injector = /** @class */ (function () {
             Array.from(INJECT_ITEMS.keys()).forEach(Injector.clearSingletons);
         }
         else if (INJECT_ITEMS.has(type)) {
-            delete type[constants_1.SINGLE_VALUE_KEY];
+            INJECT_ITEMS.get(type)[2] = undefined;
         }
         else {
-            throw new Error("Missing type " + (type && type.name) + " injection");
+            var name_2 = typeof type === 'function' ? type.name : String(type);
+            throw new Error("Missing type " + name_2 + " injection to clear");
         }
     };
     /**
@@ -237,7 +241,6 @@ exports.INJECTED_PROPERTIES = Symbol("injected properties");
 exports.INJECTED_ARGUMENTS = Symbol("injected arguments");
 exports.INJECTED_CLASS_TAG = Symbol("injected class tag");
 exports.GLOBAL_CONFIG_KEY = Symbol("global config key");
-exports.SINGLE_VALUE_KEY = Symbol("single value's key");
 
 
 /***/ }),
@@ -348,20 +351,14 @@ function inject(options) {
         arr.push(metadataValue);
         reflect_1.default.defineMetadata(metadataKey, arr, target);
     }
-    var opts = typeof options === "function" ? { type: options } : Object.assign({}, options);
+    var opts = typeof options === "object" ? Object.assign({}, options) : { type: options };
     return function (target, name, index) {
         var _a = opts, type = _a.type, args = _a.args;
         args = Array.isArray(args) ? args : [];
         var ctor = target.constructor;
-        if (index === undefined && typeof name === "string") {
-            type = type || reflect_1.default.getMetadata(constants_1.DESIGN_TYPE, target, name);
-            if (typeof type !== "function") {
-                throw new Error("Unknown property type of [" + ctor.name + "|" + name + "].");
-            }
-            bindInjections(constants_1.INJECTED_PROPERTIES, { type: type, args: args, name: name }, target);
-        }
-        else if (typeof index === "number") {
-            if (typeof type !== "function") {
+        if (typeof index === 'number') {
+            // params decorator
+            if (type === undefined) {
                 var types = reflect_1.default.getMetadata(constants_1.DESIGN_PARAM_TYPES, target, name);
                 type = types[index];
                 if (typeof type !== "function") {
@@ -369,6 +366,16 @@ function inject(options) {
                 }
             }
             bindInjections(constants_1.INJECTED_ARGUMENTS, { type: type, args: args, name: name, index: index }, target);
+        }
+        else if (typeof target !== "function") {
+            // properties decorator
+            if (type === undefined) {
+                type = reflect_1.default.getMetadata(constants_1.DESIGN_TYPE, target, name);
+                if (typeof type !== "function") {
+                    throw new Error("Unknown property type of [" + ctor.name + "|" + name + "].");
+                }
+            }
+            bindInjections(constants_1.INJECTED_PROPERTIES, { type: type, args: args, name: name }, target);
         }
     };
 }

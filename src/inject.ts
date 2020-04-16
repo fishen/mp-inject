@@ -38,19 +38,14 @@ export function inject(options?: IInjectOptions | RegisterType) {
         arr.push(metadataValue);
         reflect.defineMetadata(metadataKey, arr, target);
     }
-    const opts = typeof options === "function" ? { type: options } : Object.assign({}, options);
-    return function(target: any, name: string, index?: number) {
+    const opts = typeof options === "object" ? Object.assign({}, options) : { type: options };
+    return function (target: any, name: string, index?: number) {
         let { type, args } = opts as IInjectOptions;
         args = Array.isArray(args) ? args : [];
         const ctor = target.constructor;
-        if (index === undefined && typeof name === "string") {
-            type = type || reflect.getMetadata(DESIGN_TYPE, target, name);
-            if (typeof type !== "function") {
-                throw new Error(`Unknown property type of [${ctor.name}|${name}].`);
-            }
-            bindInjections(INJECTED_PROPERTIES, { type, args, name }, target);
-        } else if (typeof index === "number") {
-            if (typeof type !== "function") {
+        if (typeof index === 'number') {
+            // params decorator
+            if (type === undefined) {
                 const types = reflect.getMetadata(DESIGN_PARAM_TYPES, target, name);
                 type = types[index];
                 if (typeof type !== "function") {
@@ -58,6 +53,15 @@ export function inject(options?: IInjectOptions | RegisterType) {
                 }
             }
             bindInjections(INJECTED_ARGUMENTS, { type, args, name, index }, target);
+        } else if (typeof target !== "function") {
+            // properties decorator
+            if (type === undefined) {
+                type = reflect.getMetadata(DESIGN_TYPE, target, name);
+                if (typeof type !== "function") {
+                    throw new Error(`Unknown property type of [${ctor.name}|${name}].`);
+                }
+            }
+            bindInjections(INJECTED_PROPERTIES, { type, args, name }, target);
         }
     };
 }
@@ -69,13 +73,13 @@ export function injectable(options?: IConfigOptions) {
     function bindProperties(ctor: new (...args: any) => void, method: string) {
         const original = ctor.prototype[method];
         if (typeof original === "function" || original === undefined) {
-            ctor.prototype[method] = function(...methodArgs: any) {
+            ctor.prototype[method] = function (...methodArgs: any) {
                 Injector.bindProperties(this, ctor.prototype);
                 return original && original.apply(this, methodArgs);
             };
         }
     }
-    return function(ctor: new (...args: any) => any): any {
+    return function (ctor: new (...args: any) => any): any {
         const { propertiesBinder } = Injector.getConfig(ctor, options);
         reflect.defineMetadata(INJECTED_CLASS_TAG, true, ctor.prototype);
         const bindPropertiesInConstructor = propertiesBinder === "constructor";
@@ -105,8 +109,8 @@ export function injectable(options?: IConfigOptions) {
  * @param options The injection options
  */
 export function injectFor(type: RegisterType, options?: IRegisterOptions) {
-    return function(ctor: new (...args: any) => any) {
-        Injector.register(type || ctor, function(...ctorArguments: any[]) {
+    return function (ctor: new (...args: any) => any) {
+        Injector.register(type || ctor, function (...ctorArguments: any[]) {
             return new ctor(...ctorArguments);
         }, options);
     };

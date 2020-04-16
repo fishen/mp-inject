@@ -1,61 +1,56 @@
 import { expect } from "chai";
 import "mocha";
 
-import { injectable, inject, Injector, injectFor, injectSelf } from '../src/index';
+import { injectable, inject, Injector, injectSelf } from '../src/index';
 
 export interface IService {
-    get(): number;
+    value: number;
 }
 export abstract class IService { }
 
 @injectable()
-export class Service implements IService {
-    get() {
-        return 1;
-    }
+export class CustomService implements IService {
+    value = 1;
 }
-// inject manually
-Injector.register(IService, Service);
 
-export interface IService1 {
-    get(): boolean;
-}
-export abstract class IService1 { }
-// inject by decorater
-@injectFor(IService1)
-export class Service1 implements IService1 {
-    get() {
-        return true;
-    }
-}
-// inject self by decorater
+// inject self
 @injectSelf()
-export class Service2 {
-    name = 'service2';
-}
+export class CustomService1 { }
+
+// inject manually
+Injector.register(IService, CustomService);
+Injector.register('injectedStringKey', 'string value');
+Injector.register(0, Number.MAX_VALUE);
 
 @injectSelf()
 @injectable()
 export class Demo {
     constructor(@inject() public service: IService) {
-        this.service1 = Injector.get(IService1);
+        this.str = Injector.get('injectedStringKey');
     }
-    public service1: IService1;
-    @inject() 
-    public service2: Service2;
+
+    @inject() public service1: CustomService1;
+    public str: string;
+    @inject(0) public num: number;
 }
 
 
 const instance = Injector.get<Demo>(Demo);
 
-describe("demo", () => {
-    it("should injected succeeded default.", () => {
-        expect(instance.service).is.instanceOf(Service);
+describe("demo test", () => {
+    it("should be successfully injected by default.", () => {
+        expect(instance.service).is.instanceof(CustomService);
+        expect(instance.service.value).to.eq(1);
     });
-    it("should injected succeeded by using decorate", () => {
-        expect(instance.service1).is.instanceOf(Service1);
+    it("should be successfully injected by decorating properties.", () => {
+        expect(instance.num).is.a('number');
+        expect(instance.num).to.eq(Number.MAX_VALUE);
     });
-    it("should injected succeeded by using self's decorate", () => {
-        expect(instance.service2).is.instanceOf(Service2);
+    it("should be successfully injected by manually.", () => {
+        expect(instance.str).is.a('string');
+        expect(instance.str).to.eq('string value');
+    });
+    it("should be successfully injected by using self's decorate", () => {
+        expect(instance.service1).is.instanceOf(CustomService1);
     });
 });

@@ -19,7 +19,6 @@ declare module "mp-inject/src/constants" {
     export const INJECTED_ARGUMENTS: unique symbol;
     export const INJECTED_CLASS_TAG: unique symbol;
     export const GLOBAL_CONFIG_KEY: unique symbol;
-    export const SINGLE_VALUE_KEY: unique symbol;
 }
 declare module "mp-inject/src/reflect" {
     import "reflect-metadata";
@@ -28,10 +27,7 @@ declare module "mp-inject/src/reflect" {
 }
 declare module "mp-inject/src/injector" {
     import { IConfigOptions } from "mp-inject/src/config";
-    import { SINGLE_VALUE_KEY } from "mp-inject/src/constants";
-    export type RegisterType = Function & {
-        [SINGLE_VALUE_KEY]?: any;
-    };
+    export type RegisterType = Function | symbol | number | string;
     export interface IRegisterOptions {
         /**
          * Whether it is a singleton pattern
@@ -48,8 +44,8 @@ declare module "mp-inject/src/injector" {
          * @param options The registration options.
          *
          * @example
-         * Injector.register(String, "default value");
-         * Injector.register(Number, () => Math.random());
+         * Injector.register("", "default value");
+         * Injector.register(0, () => Math.random());
          * class Demo{}
          * Injector.register(Demo, new Demo());
          */
@@ -61,8 +57,9 @@ declare module "mp-inject/src/injector" {
          *
          * @example
          * class Demo{}
-         * Injector.register(Demo, new Demo());
-         * const instance = ServiceManager.get(Demo);
+         * Injector.register("demo", new Demo());
+         * const instance = ServiceManager.get("demo");
+         * const typedInstance = ServiceManager.get<Demo>("demo");
          */
         static get<T = any>(type: RegisterType, ...args: any[]): T;
         /**

@@ -1,11 +1,11 @@
 import { defaultConfigOptions, IConfigOptions } from "./config";
-import { GLOBAL_CONFIG_KEY, INJECTED_CLASS_TAG, INJECTED_PROPERTIES, SINGLE_VALUE_KEY } from "./constants";
+import { GLOBAL_CONFIG_KEY, INJECTED_CLASS_TAG, INJECTED_PROPERTIES } from "./constants";
 import reflect from "./reflect";
 
 // tslint:disable-next-line
-export type RegisterType = Function & { [SINGLE_VALUE_KEY]?: any };
+export type RegisterType = Function | symbol | number | string;
 
-const INJECT_ITEMS = new Map<any, [any, IRegisterOptions?]>();
+const INJECT_ITEMS = new Map<RegisterType, [InstanceType<any>, IRegisterOptions?, any?]>();
 
 export interface IRegisterOptions {
     /**
@@ -25,16 +25,17 @@ export class Injector {
      * @param options The registration options.
      *
      * @example
-     * Injector.register(String, "default value");
-     * Injector.register(Number, () => Math.random());
+     * Injector.register("", "default value");
+     * Injector.register(0, () => Math.random());
      * class Demo{}
      * Injector.register(Demo, new Demo());
      */
     public static register(type: RegisterType, value: any, options?: IRegisterOptions): void {
-        if (typeof type !== "function") { throw new TypeError(`The 'type' parameter must be a function type.`); }
+        const validTypes = ['function', 'number', 'string', 'symbol'];
+        const valid = validTypes.indexOf(typeof type) >= 0;
+        if (!valid) { throw new TypeError(`The 'type' parameter must be in ${validTypes}.`); }
         const factory = typeof value === "function" ? value : () => value;
         INJECT_ITEMS.set(type, [factory, options]);
-        Injector.clearSingletons(type);
     }
 
     /**
@@ -44,18 +45,20 @@ export class Injector {
      *
      * @example
      * class Demo{}
-     * Injector.register(Demo, new Demo());
-     * const instance = ServiceManager.get(Demo);
+     * Injector.register("demo", new Demo());
+     * const instance = ServiceManager.get("demo");
+     * const typedInstance = ServiceManager.get<Demo>("demo");
      */
     public static get<T = any>(type: RegisterType, ...args: any[]): T {
         if (!INJECT_ITEMS.has(type)) {
-            throw new Error(`Missing type ${type && type.name} injection`);
+            const name = typeof type === 'function' ? type.name : String(type);
+            throw new Error(`Missing type ${name} injection`);
         }
-        const [factory, options] = INJECT_ITEMS.get(type);
+        const [factory, options, instance] = INJECT_ITEMS.get(type);
         const prototype = factory.prototype;
         const singleton = type instanceof Object && options && options.singleton;
-        if (singleton && SINGLE_VALUE_KEY in type) {
-            return type[SINGLE_VALUE_KEY];
+        if (singleton && instance !== undefined) {
+            return instance;
         }
         let result;
         if (prototype && reflect.hasMetadata(INJECTED_CLASS_TAG, prototype)) {
@@ -64,7 +67,7 @@ export class Injector {
             result = factory.apply(null, args);
         }
         // tslint:disable-next-line
-        singleton && (type[SINGLE_VALUE_KEY] = result);
+        singleton && (INJECT_ITEMS.get(type)[2] = result);
         return result;
     }
 
@@ -76,9 +79,10 @@ export class Injector {
         if (type === undefined) {
             Array.from(INJECT_ITEMS.keys()).forEach(Injector.clearSingletons);
         } else if (INJECT_ITEMS.has(type)) {
-            delete type[SINGLE_VALUE_KEY];
+            INJECT_ITEMS.get(type)[2] = undefined;
         } else {
-            throw new Error(`Missing type ${type && type.name} injection`);
+            const name = typeof type === 'function' ? type.name : String(type);
+            throw new Error(`Missing type ${name} injection to clear`);
         }
     }
 

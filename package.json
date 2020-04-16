@@ -1,7 +1,7 @@
 {
   "name": "mp-inject",
-  "version": "2.3.0",
-  "description": "A simple dependency injection library for mini-programs.",
+  "version": "2.4.0",
+  "description": "A simple dependency injection library compatible with mini-programs.",
   "main": "index.js",
   "scripts": {
     "test": "mocha --require ts-node/register test/**/*.{ts,tsx}",
@@ -34,7 +34,7 @@
     "bundle-dts": "^1.1.3",
     "chai": "^4.2.0",
     "mocha": "^7.1.1",
-    "ts-loader": "^6.2.2",
+    "ts-loader": "^7.0.0",
     "ts-node": "^8.8.2",
     "tslint": "^6.1.1",
     "typescript": "^3.8.3",

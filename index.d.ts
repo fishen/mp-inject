@@ -52,6 +52,7 @@ declare module "mp-inject/src/injector" {
         static register(type: RegisterType, value: any, options?: IRegisterOptions): void;
         /**
          * Get the value corresponding to a specific type, the type must be registered in advance.
+         * If the type was't injected in advance, an error will be throw.
          * @param type The type registered.
          * @param args The parameters required by the factory function.
          *
@@ -62,6 +63,16 @@ declare module "mp-inject/src/injector" {
          * const typedInstance = ServiceManager.get<Demo>("demo");
          */
         static get<T = any>(type: RegisterType, ...args: any[]): T;
+        /**
+         * Try Get the value corresponding to a specific type
+         * @param type The type registered.
+         * @param defaultValue The value returned by default.
+         * @param args The parameters required by the factory function.
+         *
+         * @example
+         * Injector.getOrDefault(ClassType, new ClassType());
+         */
+        static getOrDefault<T = any>(type: RegisterType, defaultValue?: T, ...args: any[]): T;
         /**
          * Clear singleton of specified type, if type is omitted, clear all singletons of type.
          * @param type The specified type to clear

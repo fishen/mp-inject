@@ -81,13 +81,22 @@ class Demo{}
 Injector.register(Demo, new Demo());
 ```
 ## Injector.get<T>(type: Function|string|number|symbol, ...args: any[]): T
-Get the value corresponding to a specific type, the type must be registered in advance.
+Get the value corresponding to a specific type, the type must be registered in advance. If the type was't injected in advance, an error will be throw.
 * type: The type registered.
 * args: The parameters required by the factory function.
 ```ts
 class Demo{}
 Injector.register(Demo, new Demo());
 const instance = ServiceManager.get<Demo>(Demo);
+```
+## Injector.getOrDefault<T>(type: Function|string|number|symbol, defaultValue: T ...args: any[]): T
+Get the value corresponding to a specific type, If the type was't injected in advance, an default value will be returned.
+* type: The type registered.
+* defaultValue: The value returned by default.
+* args: The parameters required by the factory function.
+```ts
+class Demo{}
+const instance = ServiceManager.getOrDefault<Demo>(Demo, new Demo());
 ```
 ## Injector.config(options: object, target?: Function): void
 Set global injection options

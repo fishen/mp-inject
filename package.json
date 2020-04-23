@@ -1,6 +1,6 @@
 {
   "name": "mp-inject",
-  "version": "2.4.0",
+  "version": "2.5.0",
   "description": "A simple dependency injection library compatible with mini-programs.",
   "main": "index.js",
   "scripts": {

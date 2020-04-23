@@ -40,6 +40,7 @@ export class Injector {
 
     /**
      * Get the value corresponding to a specific type, the type must be registered in advance.
+     * If the type was't injected in advance, an error will be throw.
      * @param type The type registered.
      * @param args The parameters required by the factory function.
      *
@@ -69,6 +70,22 @@ export class Injector {
         // tslint:disable-next-line
         singleton && (INJECT_ITEMS.get(type)[2] = result);
         return result;
+    }
+
+    /**
+     * Try Get the value corresponding to a specific type
+     * @param type The type registered.
+     * @param defaultValue The value returned by default.
+     * @param args The parameters required by the factory function.
+     *
+     * @example
+     * Injector.getOrDefault(ClassType, new ClassType());
+     */
+    public static getOrDefault<T = any>(type: RegisterType, defaultValue?: T, ...args: any[]): T {
+        if (!INJECT_ITEMS.has(type)) {
+            return defaultValue;
+        }
+        return this.get(type, ...args);
     }
 
     /**

@@ -122,6 +122,7 @@ var Injector = /** @class */ (function () {
     };
     /**
      * Get the value corresponding to a specific type, the type must be registered in advance.
+     * If the type was't injected in advance, an error will be throw.
      * @param type The type registered.
      * @param args The parameters required by the factory function.
      *
@@ -156,6 +157,25 @@ var Injector = /** @class */ (function () {
         // tslint:disable-next-line
         singleton && (INJECT_ITEMS.get(type)[2] = result);
         return result;
+    };
+    /**
+     * Try Get the value corresponding to a specific type
+     * @param type The type registered.
+     * @param defaultValue The value returned by default.
+     * @param args The parameters required by the factory function.
+     *
+     * @example
+     * Injector.getOrDefault(ClassType, new ClassType());
+     */
+    Injector.getOrDefault = function (type, defaultValue) {
+        var args = [];
+        for (var _i = 2; _i < arguments.length; _i++) {
+            args[_i - 2] = arguments[_i];
+        }
+        if (!INJECT_ITEMS.has(type)) {
+            return defaultValue;
+        }
+        return this.get.apply(this, tslib_1.__spread([type], args));
     };
     /**
      * Clear singleton of specified type, if type is omitted, clear all singletons of type.

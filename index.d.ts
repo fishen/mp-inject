@@ -28,6 +28,8 @@ declare module "mp-inject/src/reflect" {
 declare module "mp-inject/src/injector" {
     import { IConfigOptions } from "mp-inject/src/config";
     export type RegisterType = Function | symbol | number | string;
+    type InjectionType<R, T> = R extends object | Primitive ? R : T extends new (...args: any) => any ? InstanceType<T> : any;
+    type Primitive = string | number | symbol | boolean | bigint | undefined | null;
     export interface IRegisterOptions {
         /**
          * Whether it is a singleton pattern
@@ -62,7 +64,7 @@ declare module "mp-inject/src/injector" {
          * const instance = ServiceManager.get("demo");
          * const typedInstance = ServiceManager.get<Demo>("demo");
          */
-        static get<T = any>(type: RegisterType, ...args: any[]): T;
+        static get<R, T extends RegisterType = any>(type: T, ...args: any[]): InjectionType<R, T>;
         /**
          * Try Get the value corresponding to a specific type
          * @param type The type registered.
@@ -70,9 +72,9 @@ declare module "mp-inject/src/injector" {
          * @param args The parameters required by the factory function.
          *
          * @example
-         * Injector.getOrDefault(ClassType, new ClassType());
+         * Injector.getOrDefault(ClassType, new ClassType());R
          */
-        static getOrDefault<T = any>(type: RegisterType, defaultValue?: T, ...args: any[]): T;
+        static getOrDefault<R, T extends RegisterType = any>(type: T, defaultValue?: R, ...args: any[]): InjectionType<R, T>;
         /**
          * Clear singleton of specified type, if type is omitted, clear all singletons of type.
          * @param type The specified type to clear
@@ -97,6 +99,7 @@ declare module "mp-inject/src/injector" {
          */
         static getConfig(target?: any, options?: IConfigOptions): IConfigOptions;
     }
+    export {};
 }
 declare module "mp-inject/src/inject" {
     import { IConfigOptions } from "mp-inject/src/config";

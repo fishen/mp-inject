@@ -165,7 +165,7 @@ var Injector = /** @class */ (function () {
      * @param args The parameters required by the factory function.
      *
      * @example
-     * Injector.getOrDefault(ClassType, new ClassType());
+     * Injector.getOrDefault(ClassType, new ClassType());R
      */
     Injector.getOrDefault = function (type, defaultValue) {
         var args = [];

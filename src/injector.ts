@@ -5,6 +5,10 @@ import reflect from "./reflect";
 // tslint:disable-next-line
 export type RegisterType = Function | symbol | number | string;
 
+type InjectionType<R, T> = R extends object | Primitive ? R : T extends new (...args: any) => any ? InstanceType<T> : any;
+
+type Primitive = string | number | symbol | boolean | bigint | undefined | null;
+
 const INJECT_ITEMS = new Map<RegisterType, [InstanceType<any>, IRegisterOptions?, any?]>();
 
 export interface IRegisterOptions {
@@ -50,7 +54,7 @@ export class Injector {
      * const instance = ServiceManager.get("demo");
      * const typedInstance = ServiceManager.get<Demo>("demo");
      */
-    public static get<T = any>(type: RegisterType, ...args: any[]): T {
+    public static get<R, T extends RegisterType = any>(type: T, ...args: any[]): InjectionType<R, T> {
         if (!INJECT_ITEMS.has(type)) {
             const name = typeof type === 'function' ? type.name : String(type);
             throw new Error(`Missing type ${name} injection`);
@@ -79,11 +83,11 @@ export class Injector {
      * @param args The parameters required by the factory function.
      *
      * @example
-     * Injector.getOrDefault(ClassType, new ClassType());
+     * Injector.getOrDefault(ClassType, new ClassType());R
      */
-    public static getOrDefault<T = any>(type: RegisterType, defaultValue?: T, ...args: any[]): T {
+    public static getOrDefault<R, T extends RegisterType = any>(type: T, defaultValue?: R, ...args: any[]): InjectionType<R, T> {
         if (!INJECT_ITEMS.has(type)) {
-            return defaultValue;
+            return defaultValue as any;
         }
         return this.get(type, ...args);
     }

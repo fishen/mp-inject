@@ -47,6 +47,9 @@ export function inject(options?: IInjectOptions | RegisterType) {
             // params decorator
             if (type === undefined) {
                 const types = reflect.getMetadata(DESIGN_PARAM_TYPES, target, name);
+                if (!types) {
+                    throw new Error(`Please enable "emitDecoratorMetadata" option in tsconfig.json or set "type" option manually.`);
+                }
                 type = types[index];
                 if (typeof type !== "function") {
                     throw new Error(`Unknown argument type of [${ctor.name}|${index}].`);

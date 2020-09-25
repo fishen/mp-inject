@@ -1,15 +1,15 @@
 import "reflect-metadata";
-import { Injector, injectSelf, injectable } from '../src/index';
+import { Injector, Injectable, Singleton } from '../src/index';
 import { expect } from "chai";
 import "mocha";
 
-@injectSelf({ singleton: true })
-@injectable()
+@Injectable()
+@Singleton()
 export class SingletonService {
     num = Math.random();
 }
 
-@injectSelf()
+@Injectable()
 export class Service {
     num = Math.random();
 }
@@ -21,7 +21,7 @@ describe("singleton", () => {
         expect(service1).to.be.instanceOf(Service);
         expect(service1).not.to.be.eq(service2);
     });
-    it("should return a different object when called multiple times.", () => {
+    it("should return same object when called multiple times.", () => {
         const service1 = Injector.get(SingletonService);
         const service2 = Injector.get(SingletonService);
         expect(service1).to.be.instanceOf(SingletonService);
@@ -29,7 +29,7 @@ describe("singleton", () => {
     });
     it("should return different object when register again.", () => {
         const service1 = Injector.get(SingletonService);
-        Injector.register(SingletonService, SingletonService, { singleton: true });
+        Injector.register(SingletonService, SingletonService);
         const service2 = Injector.get(SingletonService);
         const service3 = Injector.get(SingletonService);
         expect(service1).to.be.instanceOf(SingletonService);

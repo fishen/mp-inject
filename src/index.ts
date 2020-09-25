@@ -1,2 +1,4 @@
 export { Injector } from "./injector";
-export { inject, injectable, injectFor, injectSelf } from "./inject";
+export { Inject, Injectable, Optional } from "./inject";
+export { Singleton } from './singleton';
+export * as Reflect from './reflect';

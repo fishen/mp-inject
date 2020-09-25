@@ -1,10 +1,10 @@
 import "reflect-metadata";
-import { Injector, injectable } from '../src/index';
+import { Injector, Injectable } from '../src/index';
 import { IService } from "./service";
 import { expect } from "chai";
 import "mocha";
 
-@injectable()
+@Injectable()
 export class Service implements IService {
     id: number;
     num: number;

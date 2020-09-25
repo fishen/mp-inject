@@ -86,29 +86,31 @@
 /************************************************************************/
 /******/ ([
 /* 0 */
+/***/ (function(module, exports) {
+
+module.exports = require("tslib");
+
+/***/ }),
+/* 1 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Injector = void 0;
-const tslib_1 = __webpack_require__(1);
-const config_1 = __webpack_require__(5);
-const constants_1 = __webpack_require__(2);
-const reflect_1 = tslib_1.__importDefault(__webpack_require__(3));
+const singleton_1 = __webpack_require__(2);
 const INJECT_ITEMS = new Map();
 class Injector {
     /**
      * Register a service for injection.
      * @param type The service type to be register.
      * @param value The associated value can be a factory function.
-     * @param options The registration options.
+     * @param opitons The injection options.
      *
      * @example
      * Injector.register("", "default value");
-     * Injector.register(0, () => Math.random());
-     * class Demo{}
-     * Injector.register(Demo, new Demo());
+     * Injector.register(Number, () => Math.random());
+     * Injector.register(IDemo, new Demo());
      */
     static register(type, value, options) {
         const validTypes = ['function', 'number', 'string', 'symbol'];
@@ -117,56 +119,70 @@ class Injector {
             throw new TypeError(`The 'type' parameter must be in ${validTypes}.`);
         }
         const factory = typeof value === "function" ? value : () => value;
-        INJECT_ITEMS.set(type, [factory, options]);
+        INJECT_ITEMS.set(type, factory);
+        if (options === null || options === void 0 ? void 0 : options.alias) {
+            INJECT_ITEMS.set(options.alias, factory);
+        }
+        singleton_1.Singleton.clear(type);
+        return Injector;
+    }
+    /**
+     * Register a service for injection.
+     * @param type The service type to be register.
+     * @param value The associated value must be a class.
+     * @param opitons The injection options.
+     *
+     * @example
+     * Injector.register("", "default value");
+     * class Demo extens IDemo{}
+     * Injector.register(IDemo, Demo);
+     */
+    static registerClass(type, value, options) {
+        return this.register(type, (...args) => new value(...args), options);
     }
     /**
      * Get the value corresponding to a specific type, the type must be registered in advance.
-     * If the type was't injected in advance, an error will be throw.
+     * If the type was't injected in advance and the `optional` options is absent or false, an error will be throw.
      * @param type The type registered.
-     * @param args The parameters required by the factory function.
+     * @param options The injecttion options.
      *
      * @example
      * class Demo{}
      * Injector.register("demo", new Demo());
-     * const instance = ServiceManager.get("demo");
-     * const typedInstance = ServiceManager.get<Demo>("demo");
+     * const instance = Injector.get("demo");
+     * const typedInstance = Injector.get<Demo>("demo");
      */
-    static get(type, ...args) {
+    static get(type, options) {
+        if (options === null || options === void 0 ? void 0 : options.optional) {
+            return this.getOrDefault(type);
+        }
         if (!INJECT_ITEMS.has(type)) {
             const name = typeof type === 'function' ? type.name : String(type);
-            throw new Error(`Missing type ${name} injection`);
+            throw new Error(`Missing type ${name} injection [source]:${options === null || options === void 0 ? void 0 : options.source}`);
         }
-        const [factory, options, instance] = INJECT_ITEMS.get(type);
-        const prototype = factory.prototype;
-        const singleton = type instanceof Object && options && options.singleton;
-        if (singleton && instance !== undefined) {
-            return instance;
+        const factory = INJECT_ITEMS.get(type);
+        const args = options && Array.isArray(options.args) ? options.args : [];
+        try {
+            return factory.apply(null, args);
         }
-        let result;
-        if (prototype && reflect_1.default.hasMetadata(constants_1.INJECTED_CLASS_TAG, prototype)) {
-            result = new factory(...args);
+        catch (e) {
+            return new factory(...args);
         }
-        else {
-            result = factory.apply(null, args);
-        }
-        // tslint:disable-next-line
-        singleton && (INJECT_ITEMS.get(type)[2] = result);
-        return result;
     }
     /**
      * Try Get the value corresponding to a specific type
      * @param type The type registered.
      * @param defaultValue The value returned by default.
-     * @param args The parameters required by the factory function.
+     * @param options The injecttion options.
      *
      * @example
-     * Injector.getOrDefault(ClassType, new ClassType());R
+     * Injector.getOrDefault(ClassType, new ClassType());
      */
-    static getOrDefault(type, defaultValue, ...args) {
+    static getOrDefault(type, defaultValue, options) {
         if (!INJECT_ITEMS.has(type)) {
             return defaultValue;
         }
-        return this.get(type, ...args);
+        return this.get(type, options);
     }
     /**
      * Clear singleton of specified type, if type is omitted, clear all singletons of type.
@@ -177,64 +193,16 @@ class Injector {
             Array.from(INJECT_ITEMS.keys()).forEach(Injector.clearSingletons);
         }
         else if (INJECT_ITEMS.has(type)) {
-            INJECT_ITEMS.get(type)[2] = undefined;
+            singleton_1.Singleton.clear(type);
         }
         else {
             const name = typeof type === 'function' ? type.name : String(type);
             throw new Error(`Missing type ${name} injection to clear`);
         }
     }
-    /**
-     * Set global injection options
-     * @param options injection options
-     * @param target injection target
-     */
-    static config(options, target) {
-        if (typeof target === "function") {
-            target.prototype[constants_1.GLOBAL_CONFIG_KEY] = options;
-        }
-        else {
-            Object.assign(config_1.defaultConfigOptions, options);
-        }
-    }
-    /**
-     * Binding injected property members
-     * @param instance instance object
-     * @param prototype prototype object
-     */
-    static bindProperties(instance, prototype) {
-        const properties = reflect_1.default.getMetadata(constants_1.INJECTED_PROPERTIES, prototype);
-        if (!properties) {
-            return;
-        }
-        properties.forEach(({ name, type, args }) => {
-            try {
-                instance[name] = Injector.get(type, ...args);
-            }
-            catch (err) {
-                console.error(name, prototype.constructor.name, err);
-            }
-        });
-    }
-    /**
-     * Get global config options.
-     * @param target injection target.
-     * @param options inection options.
-     */
-    static getConfig(target, options) {
-        target = target || {};
-        const prototype = typeof target === "function" ? target.prototype : Object.getPrototypeOf(target);
-        return Object.assign({}, config_1.defaultConfigOptions, prototype[constants_1.GLOBAL_CONFIG_KEY], options);
-    }
 }
 exports.Injector = Injector;
 
-
-/***/ }),
-/* 1 */
-/***/ (function(module, exports) {
-
-module.exports = require("tslib");
 
 /***/ }),
 /* 2 */
@@ -243,14 +211,44 @@ module.exports = require("tslib");
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.GLOBAL_CONFIG_KEY = exports.INJECTED_CLASS_TAG = exports.INJECTED_ARGUMENTS = exports.INJECTED_PROPERTIES = exports.DESIGN_RETURN_TYPE = exports.DESIGN_TYPE = exports.DESIGN_PARAM_TYPES = void 0;
-exports.DESIGN_PARAM_TYPES = "design:paramtypes";
-exports.DESIGN_TYPE = "design:type";
-exports.DESIGN_RETURN_TYPE = "design:returntype";
-exports.INJECTED_PROPERTIES = Symbol("injected properties");
-exports.INJECTED_ARGUMENTS = Symbol("injected arguments");
-exports.INJECTED_CLASS_TAG = Symbol("injected class tag");
-exports.GLOBAL_CONFIG_KEY = Symbol("global config key");
+exports.Singleton = void 0;
+const SINGLETON = Symbol();
+function Singleton() {
+    return function (target) {
+        return class extends target {
+            constructor(...args) {
+                if (SINGLETON in target) {
+                    return target[SINGLETON];
+                }
+                else {
+                    super(...args);
+                    target[SINGLETON] = this;
+                }
+            }
+        };
+    };
+}
+exports.Singleton = Singleton;
+Singleton.clear = function (target) {
+    if (typeof target === 'function') {
+        if (SINGLETON in target) {
+            do {
+                delete target[SINGLETON];
+                target = Object.getPrototypeOf(target);
+            } while (target && target !== Object.prototype);
+            return true;
+        }
+        else {
+            return false;
+        }
+    }
+    else if (target.constructor) {
+        return Singleton.clear(target.constructor);
+    }
+    else {
+        return false;
+    }
+};
 
 
 /***/ }),
@@ -260,7 +258,7 @@ exports.GLOBAL_CONFIG_KEY = Symbol("global config key");
 "use strict";
 /* WEBPACK VAR INJECTION */(function(global) {
 Object.defineProperty(exports, "__esModule", { value: true });
-__webpack_require__(7);
+__webpack_require__(8);
 function isValid(obj) {
     return typeof obj === "object" && typeof obj.getMetadata === "function";
 }
@@ -278,7 +276,7 @@ const reflect = (function () {
 }());
 exports.default = reflect;
 
-/* WEBPACK VAR INJECTION */}.call(this, __webpack_require__(6)))
+/* WEBPACK VAR INJECTION */}.call(this, __webpack_require__(7)))
 
 /***/ }),
 /* 4 */
@@ -287,13 +285,17 @@ exports.default = reflect;
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-var injector_1 = __webpack_require__(0);
+exports.Reflect = exports.Singleton = exports.Optional = exports.Injectable = exports.Inject = exports.Injector = void 0;
+const tslib_1 = __webpack_require__(0);
+var injector_1 = __webpack_require__(1);
 Object.defineProperty(exports, "Injector", { enumerable: true, get: function () { return injector_1.Injector; } });
-var inject_1 = __webpack_require__(8);
-Object.defineProperty(exports, "inject", { enumerable: true, get: function () { return inject_1.inject; } });
-Object.defineProperty(exports, "injectable", { enumerable: true, get: function () { return inject_1.injectable; } });
-Object.defineProperty(exports, "injectFor", { enumerable: true, get: function () { return inject_1.injectFor; } });
-Object.defineProperty(exports, "injectSelf", { enumerable: true, get: function () { return inject_1.injectSelf; } });
+var inject_1 = __webpack_require__(5);
+Object.defineProperty(exports, "Inject", { enumerable: true, get: function () { return inject_1.Inject; } });
+Object.defineProperty(exports, "Injectable", { enumerable: true, get: function () { return inject_1.Injectable; } });
+Object.defineProperty(exports, "Optional", { enumerable: true, get: function () { return inject_1.Optional; } });
+var singleton_1 = __webpack_require__(2);
+Object.defineProperty(exports, "Singleton", { enumerable: true, get: function () { return singleton_1.Singleton; } });
+exports.Reflect = tslib_1.__importStar(__webpack_require__(3));
 
 
 /***/ }),
@@ -303,14 +305,89 @@ Object.defineProperty(exports, "injectSelf", { enumerable: true, get: function (
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.defaultConfigOptions = void 0;
-exports.defaultConfigOptions = {
-    propertiesBinder: "constructor",
-};
+exports.Injectable = exports.Optional = exports.Inject = exports.INJECTED_ARGUMENTS = void 0;
+const tslib_1 = __webpack_require__(0);
+const constants_1 = __webpack_require__(6);
+const injector_1 = __webpack_require__(1);
+const reflect_1 = tslib_1.__importDefault(__webpack_require__(3));
+exports.INJECTED_ARGUMENTS = Symbol();
+/**
+ * Tag arguments or properties to inject.
+ * @param options Injection options
+ */
+function Inject(options) {
+    const opt = options && typeof options === 'object' ? options : { type: options };
+    return function (target, name, index) {
+        if (name && typeof target !== 'function' && index === undefined) {
+            // properties
+            let type = reflect_1.default.getOwnMetadata(constants_1.DESIGN_TYPE, target, name);
+            type = opt.type !== undefined ? opt.type : (type || name);
+            opt.source = opt.source || `the property ${name} in class ${target.constructor.name}`;
+            Object.defineProperty(target, name, { get: () => injector_1.Injector.get(type, opt) });
+        }
+        else if (typeof index === 'number' && !name) {
+            // constructor arguments
+            let metadata = reflect_1.default.getOwnMetadata(exports.INJECTED_ARGUMENTS, target);
+            metadata = metadata || new Map();
+            const className = target.constructor.name;
+            opt.source = opt.source || `the ${index}th argument in ${className} constructor`;
+            metadata.set(index, opt);
+            reflect_1.default.defineMetadata(exports.INJECTED_ARGUMENTS, metadata, target);
+        }
+        else {
+            console.warn('The decorater @Inject must used in properties or methods', target, name, index, options);
+        }
+    };
+}
+exports.Inject = Inject;
+/**
+ * Tag optional arguments or properties to inject.
+ * @param options Injection options
+ */
+function Optional(options) {
+    return Inject(Object.assign({}, options, { optional: true }));
+}
+exports.Optional = Optional;
+/**
+ * Automatically inject properties or constructor arguments for the current class
+ */
+function Injectable(options) {
+    return function (ctor) {
+        const metadata = reflect_1.default.getOwnMetadata(exports.INJECTED_ARGUMENTS, ctor);
+        const result = class extends ctor {
+            constructor(...args) {
+                const paramtypes = reflect_1.default.getOwnMetadata(constants_1.DESIGN_PARAM_TYPES, ctor) || [];
+                paramtypes.forEach((t, index) => {
+                    const meta = metadata && metadata.get(index);
+                    const type = meta && meta.type !== undefined ? meta.type : t;
+                    args[index] === undefined && (args[index] = injector_1.Injector.get(type, meta));
+                });
+                super(...args);
+            }
+        };
+        Object.defineProperty(result, "name", { value: ctor.name });
+        injector_1.Injector.registerClass(result, result, options);
+        return result;
+    };
+}
+exports.Injectable = Injectable;
 
 
 /***/ }),
 /* 6 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.DESIGN_RETURN_TYPE = exports.DESIGN_TYPE = exports.DESIGN_PARAM_TYPES = void 0;
+exports.DESIGN_PARAM_TYPES = "design:paramtypes";
+exports.DESIGN_TYPE = "design:type";
+exports.DESIGN_RETURN_TYPE = "design:returntype";
+
+
+/***/ }),
+/* 7 */
 /***/ (function(module, exports) {
 
 var g;
@@ -336,124 +413,10 @@ module.exports = g;
 
 
 /***/ }),
-/* 7 */
+/* 8 */
 /***/ (function(module, exports) {
 
 module.exports = require("reflect-metadata");
-
-/***/ }),
-/* 8 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.injectSelf = exports.injectFor = exports.injectable = exports.inject = void 0;
-const tslib_1 = __webpack_require__(1);
-const constants_1 = __webpack_require__(2);
-const injector_1 = __webpack_require__(0);
-const reflect_1 = tslib_1.__importDefault(__webpack_require__(3));
-/**
- * Tag arguments or properties to inject.
- */
-function inject(options) {
-    function bindInjections(metadataKey, metadataValue, target) {
-        let arr = reflect_1.default.getMetadata(metadataKey, target);
-        arr = arr ? arr.slice() : [];
-        arr.push(metadataValue);
-        reflect_1.default.defineMetadata(metadataKey, arr, target);
-    }
-    const opts = typeof options === "object" ? Object.assign({}, options) : { type: options };
-    return function (target, name, index) {
-        let { type, args } = opts;
-        args = Array.isArray(args) ? args : [];
-        const ctor = target.constructor;
-        if (typeof index === 'number') {
-            // params decorator
-            if (type === undefined) {
-                const types = reflect_1.default.getMetadata(constants_1.DESIGN_PARAM_TYPES, target, name);
-                if (!types) {
-                    throw new Error(`Please enable "emitDecoratorMetadata" option in tsconfig.json or set "type" option manually.`);
-                }
-                type = types[index];
-                if (typeof type !== "function") {
-                    throw new Error(`Unknown argument type of [${ctor.name}|${index}].`);
-                }
-            }
-            bindInjections(constants_1.INJECTED_ARGUMENTS, { type, args, name, index }, target);
-        }
-        else if (typeof target !== "function") {
-            // properties decorator
-            if (type === undefined) {
-                type = reflect_1.default.getMetadata(constants_1.DESIGN_TYPE, target, name);
-                if (typeof type !== "function") {
-                    throw new Error(`Unknown property type of [${ctor.name}|${name}].`);
-                }
-            }
-            bindInjections(constants_1.INJECTED_PROPERTIES, { type, args, name }, target);
-        }
-    };
-}
-exports.inject = inject;
-/**
- * Automatically inject properties or constructor arguments for the current class
- */
-function injectable(options) {
-    function bindProperties(ctor, method) {
-        const original = ctor.prototype[method];
-        if (typeof original === "function" || original === undefined) {
-            ctor.prototype[method] = function (...methodArgs) {
-                injector_1.Injector.bindProperties(this, ctor.prototype);
-                return original && original.apply(this, methodArgs);
-            };
-        }
-    }
-    return function (ctor) {
-        const { propertiesBinder } = injector_1.Injector.getConfig(ctor, options);
-        reflect_1.default.defineMetadata(constants_1.INJECTED_CLASS_TAG, true, ctor.prototype);
-        const bindPropertiesInConstructor = propertiesBinder === "constructor";
-        const hasProperties = reflect_1.default.hasMetadata(constants_1.INJECTED_PROPERTIES, ctor.prototype);
-        if (!bindPropertiesInConstructor && hasProperties && typeof propertiesBinder === "string") {
-            bindProperties(ctor, propertiesBinder);
-        }
-        const hasArguments = reflect_1.default.hasMetadata(constants_1.INJECTED_ARGUMENTS, ctor);
-        if (hasProperties && bindPropertiesInConstructor || hasArguments) {
-            return class extends ctor {
-                constructor(...newArgs) {
-                    const injectedArgs = reflect_1.default.getMetadata(constants_1.INJECTED_ARGUMENTS, ctor) || [];
-                    injectedArgs.filter(({ index }) => newArgs[index] === undefined)
-                        .forEach(({ index, args, type }) => newArgs[index] = injector_1.Injector.get(type, ...args));
-                    super(...newArgs);
-                    // tslint:disable-next-line
-                    hasProperties && bindPropertiesInConstructor && injector_1.Injector.bindProperties(this, ctor.prototype);
-                }
-            };
-        }
-    };
-}
-exports.injectable = injectable;
-/**
- * Register the current class as a service of the specified type
- * @param type The type to register
- * @param options The injection options
- */
-function injectFor(type, options) {
-    return function (ctor) {
-        injector_1.Injector.register(type || ctor, function (...ctorArguments) {
-            return new ctor(...ctorArguments);
-        }, options);
-    };
-}
-exports.injectFor = injectFor;
-/**
- * Register the current class as a service of the self type
- * @param options The injection options
- */
-function injectSelf(options) {
-    return injectFor(null, options);
-}
-exports.injectSelf = injectSelf;
-
 
 /***/ })
 /******/ ])));

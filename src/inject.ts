@@ -1,128 +1,63 @@
+import { DESIGN_TYPE, DESIGN_PARAM_TYPES } from "./constants";
+import { Injector, InjectOptions, RegisterType, InjectionOptions } from "./injector";
+import Reflect from './reflect';
 
-import { IConfigOptions } from "./config";
-import {
-    DESIGN_PARAM_TYPES, DESIGN_TYPE, INJECTED_ARGUMENTS, INJECTED_CLASS_TAG,
-    INJECTED_PROPERTIES,
-} from "./constants";
-import { Injector, IRegisterOptions, RegisterType } from "./injector";
-import reflect from "./reflect";
-
-interface IInjectOptions {
-    /**
-     * The parameters required by the factory function.
-     */
-    args?: any[];
-    /**
-     * The type to register
-     */
-    type?: RegisterType;
-}
-
-interface IInjectedProperty {
-    type: any;
-    args: any[];
-    name: string;
-}
-
-interface IInjectedArgument extends IInjectedProperty {
-    index: number;
-}
+const INJECTED_ARGUMENTS = Symbol();
 
 /**
  * Tag arguments or properties to inject.
+ * @param options Injection options
  */
-export function inject(options?: IInjectOptions | RegisterType) {
-    function bindInjections<T extends IInjectedProperty>(metadataKey: symbol, metadataValue: T, target: object) {
-        let arr = reflect.getMetadata(metadataKey, target);
-        arr = arr ? arr.slice() : [];
-        arr.push(metadataValue);
-        reflect.defineMetadata(metadataKey, arr, target);
-    }
-    const opts = typeof options === "object" ? Object.assign({}, options) : { type: options };
-    return function (target: any, name: string, index?: number) {
-        let { type, args } = opts as IInjectOptions;
-        args = Array.isArray(args) ? args : [];
-        const ctor = target.constructor;
-        if (typeof index === 'number') {
-            // params decorator
-            if (type === undefined) {
-                const types = reflect.getMetadata(DESIGN_PARAM_TYPES, target, name);
-                if (!types) {
-                    throw new Error(`Please enable "emitDecoratorMetadata" option in tsconfig.json or set "type" option manually.`);
-                }
-                type = types[index];
-                if (typeof type !== "function") {
-                    throw new Error(`Unknown argument type of [${ctor.name}|${index}].`);
-                }
-            }
-            bindInjections(INJECTED_ARGUMENTS, { type, args, name, index }, target);
-        } else if (typeof target !== "function") {
-            // properties decorator
-            if (type === undefined) {
-                type = reflect.getMetadata(DESIGN_TYPE, target, name);
-                if (typeof type !== "function") {
-                    throw new Error(`Unknown property type of [${ctor.name}|${name}].`);
-                }
-            }
-            bindInjections(INJECTED_PROPERTIES, { type, args, name }, target);
+export function Inject(options?: InjectOptions | RegisterType) {
+    const opt: InjectOptions = options && typeof options === 'object' ? options : { type: options } as any;
+    return function (target: any, name: string, index?: number): void {
+        if (name && typeof target !== 'function' && index === undefined) {
+            // properties
+            let type = Reflect.getOwnMetadata(DESIGN_TYPE, target, name);
+            type = opt!.type !== undefined ? opt!.type : (type || name);
+            opt.source = opt.source || `the property ${name} in class ${target.constructor.name}`;
+            Object.defineProperty(target, name, { get: () => Injector.get(type, opt) })
+        } else if (typeof index === 'number' && !name) {
+            // constructor arguments
+            let metadata: Map<number, InjectOptions> = Reflect.getOwnMetadata(INJECTED_ARGUMENTS, target);
+            metadata = metadata || new Map();
+            const className = target.constructor.name;
+            opt.source = opt.source || `the ${index}th argument in ${className} constructor`;
+            metadata.set(index, opt);
+            Reflect.defineMetadata(INJECTED_ARGUMENTS, metadata, target);
+        } else {
+            console.warn('The decorater @Inject must used in properties or methods', target, name, index, options)
         }
-    };
+    }
+}
+
+/**
+ * Tag optional arguments or properties to inject.
+ * @param options Injection options
+ */
+export function Optional(options?: Omit<InjectOptions, 'optional'> | RegisterType) {
+    return Inject(Object.assign({}, options, { optional: true }));
 }
 
 /**
  * Automatically inject properties or constructor arguments for the current class
  */
-export function injectable(options?: IConfigOptions) {
-    function bindProperties(ctor: new (...args: any) => void, method: string) {
-        const original = ctor.prototype[method];
-        if (typeof original === "function" || original === undefined) {
-            ctor.prototype[method] = function (...methodArgs: any) {
-                Injector.bindProperties(this, ctor.prototype);
-                return original && original.apply(this, methodArgs);
-            };
-        }
+export function Injectable(options?: InjectionOptions) {
+    return function <T extends new (...args: any[]) => any>(ctor: T): any {
+        const metadata: Map<number, InjectOptions> = Reflect.getOwnMetadata(INJECTED_ARGUMENTS, ctor);
+        const result = class extends ctor {
+            constructor(...args: any[]) {
+                const paramtypes: Function[] = Reflect.getOwnMetadata(DESIGN_PARAM_TYPES, ctor) || [];
+                paramtypes.forEach((t, index) => {
+                    const meta = metadata && metadata.get(index);
+                    const type = meta && meta.type !== undefined ? meta.type : t;
+                    args[index] === undefined && (args[index] = Injector.get(type, meta));
+                });
+                super(...args);
+            }
+        };
+        Object.defineProperty(result, "name", { value: ctor.name });
+        Injector.registerClass(result, result, options);
+        return result;
     }
-    return function (ctor: new (...args: any) => any): any {
-        const { propertiesBinder } = Injector.getConfig(ctor, options);
-        reflect.defineMetadata(INJECTED_CLASS_TAG, true, ctor.prototype);
-        const bindPropertiesInConstructor = propertiesBinder === "constructor";
-        const hasProperties = reflect.hasMetadata(INJECTED_PROPERTIES, ctor.prototype);
-        if (!bindPropertiesInConstructor && hasProperties && typeof propertiesBinder === "string") {
-            bindProperties(ctor, propertiesBinder);
-        }
-        const hasArguments = reflect.hasMetadata(INJECTED_ARGUMENTS, ctor);
-        if (hasProperties && bindPropertiesInConstructor || hasArguments) {
-            return class extends ctor {
-                constructor(...newArgs: any) {
-                    const injectedArgs: IInjectedArgument[] = reflect.getMetadata(INJECTED_ARGUMENTS, ctor) || [];
-                    injectedArgs.filter(({ index }) => newArgs[index] === undefined)
-                        .forEach(({ index, args, type }) => newArgs[index] = Injector.get(type, ...args));
-                    super(...newArgs);
-                    // tslint:disable-next-line
-                    hasProperties && bindPropertiesInConstructor && Injector.bindProperties(this, ctor.prototype);
-                }
-            };
-        }
-    };
-}
-
-/**
- * Register the current class as a service of the specified type
- * @param type The type to register
- * @param options The injection options
- */
-export function injectFor(type: RegisterType, options?: IRegisterOptions) {
-    return function (ctor: new (...args: any) => any) {
-        Injector.register(type || ctor, function (...ctorArguments: any[]) {
-            return new ctor(...ctorArguments);
-        }, options);
-    };
-}
-
-/**
- * Register the current class as a service of the self type
- * @param options The injection options
- */
-export function injectSelf(options?: IRegisterOptions) {
-    return injectFor(null, options);
 }

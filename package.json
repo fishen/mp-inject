@@ -1,26 +1,21 @@
 {
   "name": "mp-inject",
-  "version": "2.6.0",
-  "description": "A simple dependency injection library compatible with mini-programs.",
+  "version": "3.0.0",
+  "description": "A type-based dependency injection library.",
   "main": "index.js",
   "scripts": {
     "test": "mocha --require ts-node/register test/**/*.{ts,tsx}",
     "lint": "tslint -c tslint.json 'src/**/*.ts'",
     "fix": "tslint -c tslint.json 'src/**/*.ts' --fix",
     "type-check": "tsc --noEmit",
-    "type-check:watch": "npm run type-check -- --watch",
+    "type-check:watch": "npm run type-check --watch",
     "build": "npm run type-check&&npm run fix&&webpack",
     "pack": "npm run build&&npm pack"
   },
   "keywords": [
     "miniprogram",
     "DI",
-    "dependency injection",
-    "wxapp",
-    "tt",
-    "swan",
-    "my",
-    "taro"
+    "dependency injection"
   ],
   "author": "fisher <i.yu@qq.com>",
   "license": "ISC",
@@ -30,20 +25,20 @@
   },
   "devDependencies": {
     "@types/chai": "^4.2.12",
-    "@types/mocha": "^8.0.0",
-    "bundle-dts": "^1.1.3",
+    "@types/mocha": "^8.0.3",
+    "bundle-dts": "^1.1.4",
     "chai": "^4.2.0",
-    "mocha": "^8.0.1",
-    "ts-loader": "^8.0.1",
-    "ts-node": "^8.10.2",
-    "tslint": "^6.1.2",
-    "typescript": "^3.9.7",
-    "webpack": "^4.44.1",
+    "mocha": "^8.1.3",
+    "ts-loader": "^8.0.4",
+    "ts-node": "^9.0.0",
+    "tslint": "^6.1.3",
+    "typescript": "^4.0.3",
+    "webpack": "^4.44.2",
     "webpack-cli": "^3.3.12",
-    "webpack-node-externals": "^2.5.0"
+    "webpack-node-externals": "^2.5.2"
   },
   "dependencies": {
     "reflect-metadata": "^0.1.13",
-    "tslib": "^2.0.0"
+    "tslib": "^2.0.1"
   }
 }

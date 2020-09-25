@@ -22,7 +22,7 @@
     },
     "include": [
       "src/**/*.ts",
-      "test/**/*.ts"
+      "test/**/*.ts", "test/properties-no-in-constructor.ts1", "test/config.ts1", "test/z-global-config.ts1", "test/properties-default-method.ts1", "test/properties-custom-method.ts1"
     ],
     "exclude": [
       "typings",

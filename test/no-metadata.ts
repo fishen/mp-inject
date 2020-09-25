@@ -1,37 +1,31 @@
-import "reflect-metadata";
-import { Injector, injectable, inject, injectFor, injectSelf } from '../src/index';
+import { Injector, Injectable, Inject } from '../src/index';
 import { IService } from "./service";
 import { expect } from "chai";
 import "mocha";
 
-@injectFor(Service)
+@Injectable()
 export class Service implements IService {
     id: number;
     num: number;
 }
 
-@injectSelf()
-@injectable()
+@Injectable()
 export class Demo {
-    @inject()
-    name: string;
-    @inject()
-    age: number;
-    @inject(Service)
-    service: IService;
+    constructor(
+        @Inject(String) public name: string,
+        @Inject(IService) public service: IService
+    ) { }
+    @Inject(Number) public age: number
 }
 
+let instance: Demo;
 Injector.register(String, 'default value');
 Injector.register(Number, () => Math.random());
+Injector.register(IService, Service);
+Injector.register(Demo, Demo);
+instance = Injector.get<Demo>(Demo);
 
-let instance: Demo;
-
-describe("inject to self", () => {
-    before(function () {
-        Injector.register(String, 'default value');
-        Injector.register(Number, () => Math.random());
-        instance = Injector.get<Demo>(Demo);
-    });
+describe("with no reflect-metadata", () => {
     it("should be a string.", () => {
         expect(typeof instance.name).to.be.eq('string');
     });

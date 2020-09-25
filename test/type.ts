@@ -1,9 +1,9 @@
-import { Injector, injectable, inject } from '../src/index';
+import { Injector, Injectable, Inject } from '../src/index';
 import { IService } from "./service";
 import { expect, assert } from "chai";
 import "mocha";
 
-@injectable()
+@Injectable()
 export class CustomService implements IService {
     id: number;
     num: number;
@@ -11,17 +11,16 @@ export class CustomService implements IService {
 
 let instance: Demo, sym = Symbol();
 
-@injectable()
+@Injectable()
 export class Demo {
     constructor(
-        @inject(String) public name: string,
-        @inject(IService) public service: IService,
-        @inject(0) public num: number,
-        @inject("string") public str: string,
-        @inject(sym) public symbol: symbol,
+        @Inject(String) public name: string,
+        @Inject(IService) public service: IService,
+        @Inject(0) public num: number,
+        @Inject("string") public str: string,
+        @Inject(sym) public symbol: symbol,
     ) { }
-    @inject(Number)
-    public age: number
+    @Inject(Number) public age: number
 }
 
 describe("with no reflect-metadata", () => {

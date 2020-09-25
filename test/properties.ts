@@ -1,22 +1,22 @@
 import "reflect-metadata";
-import { Injector, injectable, inject, injectFor } from '../src/index';
+import { Injector, Injectable, Inject,  } from '../src/index';
 import { IService } from "./service";
 import { expect } from "chai";
 import "mocha";
 
-@injectable()
+@Injectable()
 export class Service implements IService {
     id: number;
     num: number;
 }
 
-@injectable()
+@Injectable()
 export class Demo {
-    @inject()
+    @Inject()
     name: string;
-    @inject()
+    @Inject()
     age: number;
-    @inject()
+    @Inject()
     service: IService;
 }
 
